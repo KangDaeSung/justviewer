@@ -8,32 +8,6 @@
     <color name="c_c6c6c6">#c6c6c6</color>
     <color name="c_74ce70">#74ce70</color>
 
-    <color name="white">#ffffff</color>
-    <color name="black">#000000</color>
-    <color name="darkTransparent">#B0000000</color>
-    <color name="transparent">#00000000</color>
-
-    <color name="materialRed">#d6552e</color>
-    <color name="materialGreen">#b4c64a</color>
-    <color name="materialBlue">#1892cc</color>
-
-    <color name="introText">#ff444444</color>
-    <color name="introButton">#7d000000</color>
-
-    <color name="c_333333">#333333</color>
-    <color name="c_ffffff">#ffffff</color>
     <color name="c_efefef">#efefef</color>
-    <color name="c_77000000">#77000000</color>
-    <color name="c_99ffffff">#99ffffff</color>
-    <color name="c_33ffffff">#33ffffff</color>
-    <color name="c_747474">#747474</color>
-    <color name="c_cccccc">#cccccc</color>
-    <color name="c_dddddd">#dddddd</color>
-    <color name="c_f57056">#f57056</color>
-    <color name="c_d5d5d5">#d5d5d5</color>
-    <color name="c_fafafa">#fafafa</color>
-
-    <color name="c_fe6a09">#fe6a09</color>
-    <color name="c_7d6356">#7d6356</color>
 
 </resources>
