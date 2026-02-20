@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.kds3393.just.viewer"
+    android:versionCode="13"
+    android:versionName="1.9.5">
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="16" />
+
+    <application
+        android:name="com.kds3393.just.viewer.JustViewerApp"
+        android:allowBackup="true"
+        android:icon="@drawable/icon"
+        android:label="JustViewer"
+        android:largeHeap="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="com.kds3393.just.viewer.Activity.ActJustViewer"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="JustViewer"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.kds3393.just.viewer.Image.ImageViewerActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppThemeFullScreen"
+            android:windowSoftInputMode="adjustPan"/>
+
+        <activity
+            android:name="com.kds3393.just.viewer.Movie.MoviePlayerActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/AppThemeFullScreen"/>
+
+        <activity
+            android:name="com.kds3393.just.viewer.Text.TextViewerActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:theme="@style/AppThemeFullScreen"/>
+        <activity
+            android:name="com.kds3393.just.viewer.Config.SettingActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:theme="@style/AppTheme"/>
+        <activity
+            android:name="com.kds3393.just.viewer.Config.HelpActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:theme="@style/AppTheme"/>
+
+        <service
+            android:name="com.kds3393.just.viewer.Music.MusicService"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="com.kds3393.playmusic"></action>
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

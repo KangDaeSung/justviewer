@@ -1,0 +1,9 @@
+<resources>
+
+    <!-- MainView Layout -->
+    <dimen name="topbar_height">62dp</dimen>
+	
+    <!-- Tutorial Fragment -->
+    <dimen name="tutorial_circle_indicator_radius">13dp</dimen>
+
+</resources>

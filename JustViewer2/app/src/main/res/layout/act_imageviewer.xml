@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <com.kds3393.just.justviewer2.image.ImageViewer
+        android:id="@+id/imageviewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.kds3393.just.justviewer2.views.PageControlView
+        android:id="@+id/layoutMoveEdit"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/txtNaviTitle"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navi_title_height"
+        android:background="#b222252d"
+        android:gravity="center"
+        android:shadowColor="#FF000000"
+        android:shadowDx="1.0"
+        android:shadowDy="1.0"
+        android:shadowRadius="1.0"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/imageviewer_navi_title_txt_size"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/imageComposeView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutNavi"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/txtNaviPage"
+            android:layout_width="@dimen/imageviewer_navi_page_width"
+            android:layout_height="@dimen/navi_title_height"
+            android:gravity="center"
+            android:shadowDx="1.0"
+            android:shadowDy="1.0"
+            android:shadowRadius="1.0"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/imageviewer_navi_page_txt_size"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutBottom"
+            android:layout_width="match_parent"
+            android:layout_height="57dp"
+            android:background="#b222252d"
+            android:gravity="center_vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:id="@+id/pageDirection"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginStart="@dimen/imageviewer_bottom_icon_margin"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/pageEditmode"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginStart="@dimen/imageviewer_bottom_icon_margin"
+                android:src="@drawable/h_move_button_edit"
+                app:layout_constraintBottom_toBottomOf="@id/pageDirection"
+                app:layout_constraintStart_toEndOf="@id/pageDirection"
+                app:layout_constraintTop_toTopOf="@id/pageDirection" />
+
+            <ImageView
+                android:id="@+id/removeFile"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginStart="@dimen/imageviewer_bottom_icon_margin"
+                android:src="@drawable/h_media_delete"
+                app:layout_constraintBottom_toBottomOf="@id/pageDirection"
+                app:layout_constraintStart_toEndOf="@id/pageEditmode"
+                app:layout_constraintTop_toTopOf="@id/pageDirection" />
+
+            <ImageView
+                android:id="@+id/prevBook"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginEnd="@dimen/imageviewer_bottom_icon_margin"
+                android:src="@drawable/h_media_prev"
+                app:layout_constraintBottom_toBottomOf="@id/pageDirection"
+                app:layout_constraintEnd_toStartOf="@id/nextBook"
+                app:layout_constraintTop_toTopOf="@id/pageDirection" />
+
+            <ImageView
+                android:id="@+id/nextBook"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginStart="@dimen/imageviewer_bottom_icon_margin"
+                android:src="@drawable/h_media_next"
+                app:layout_constraintBottom_toBottomOf="@id/pageDirection"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/pageDirection" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="250.5dp"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <com.kds3393.just.justviewer2.music.MusicPlayerPanelView
+                android:id="@+id/imageMusicPanel"
+                android:layout_width="match_parent"
+                android:layout_height="250.5dp"
+                android:layout_marginTop="205dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,185 @@
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:id="@+id/txt_setting_color"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="색상"
+            android:textColor="@android:color/black"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_color_00_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_color_01_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_color_02_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_color_03_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_color_04_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/txt_setting_size"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="크기"
+            android:textColor="@android:color/black"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_size_00_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_size_01_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_size_02_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_size_03_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_size_04_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/txt_setting_gap"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="줄 간격"
+            android:textColor="@android:color/black"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_gap_00_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_gap_01_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_gap_02_btn"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/txt_setting_font1"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Font"
+            android:textColor="@android:color/black"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_font_00_btn"
+            android:layout_width="95dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_font_01_btn"
+            android:layout_width="95dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/txt_setting_font2"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="70dp">
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_font_02_btn"
+            android:layout_width="95dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+
+        <com.kds3393.just.viewer.View.TextButton
+            android:id="@+id/txt_setting_font_03_btn"
+            android:layout_width="95dp"
+            android:layout_height="35dp"
+            android:layout_marginLeft="10dp"/>
+    </LinearLayout>
+
+</merge>

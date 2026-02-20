@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+    <com.kds3393.just.viewer.Image.ImageViewer
+        android:id="@+id/imageviewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <com.kds3393.just.viewer.View.PageControlView
+        android:id="@+id/layout_move_edit"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+
+    <RelativeLayout
+        android:id="@+id/layout_navi"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/txt_navi_title"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/imageviewer_navi_title_height"
+            android:background="#b222252d"
+            android:gravity="center"
+            android:shadowColor="#FF000000"
+            android:shadowDx="1.0"
+            android:shadowDy="1.0"
+            android:shadowRadius="1.0"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/imageviewer_navi_title_txt_size"/>
+
+        <TextView
+            android:id="@+id/txt_navi_page"
+            android:layout_width="@dimen/imageviewer_navi_page_width"
+            android:layout_height="@dimen/imageviewer_navi_title_height"
+            android:gravity="center"
+            android:shadowDx="1.0"
+            android:shadowDy="1.0"
+            android:shadowRadius="1.0"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/imageviewer_navi_page_txt_size"/>
+
+        <LinearLayout
+            android:layout_width="@dimen/imageviewer_navi_info_layout_width"
+            android:layout_height="@dimen/imageviewer_navi_title_height"
+            android:layout_alignParentRight="true"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <com.kds3393.just.viewer.View.BatteryView
+                android:id="@+id/battery"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:textSize="@dimen/imageviewer_navi_info_time_txt_size"/>
+
+            <com.kds3393.just.viewer.View.TimeTextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:shadowColor="#FF000000"
+                android:shadowDx="1.0"
+                android:shadowDy="1.0"
+                android:shadowRadius="1.0"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/imageviewer_navi_info_time_txt_size"/>
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/layout_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/imageviewer_bottom_layout_width"
+            android:layout_alignParentBottom="true"
+            android:background="#b222252d"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/page_direction"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_alignParentLeft="true"
+                android:layout_marginLeft="@dimen/imageviewer_bottom_icon_margin"/>
+
+            <ImageView
+                android:id="@+id/page_slideshow"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginLeft="@dimen/imageviewer_bottom_icon_margin"
+                android:layout_toRightOf="@id/page_direction"
+                android:src="@drawable/h_3d_media_play"/>
+
+            <ImageView
+                android:id="@+id/page_editmode"
+                android:layout_width="@dimen/imageviewer_bottom_icon_size"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_marginLeft="@dimen/imageviewer_bottom_icon_margin"
+                android:layout_toRightOf="@id/page_slideshow"
+                android:src="@drawable/h_move_button_edit"/>
+
+            <EditText
+                android:id="@+id/page_gopage"
+                android:layout_width="@dimen/imageviewer_bottom_gopage_width"
+                android:layout_height="@dimen/imageviewer_bottom_icon_size"
+                android:layout_alignParentRight="true"
+                android:layout_marginLeft="@dimen/imageviewer_bottom_icon_margin"
+                android:gravity="center"
+                android:hint="페이지 이동"
+                android:inputType="number"
+                android:maxLines="1"
+                android:textSize="16sp"/>
+        </RelativeLayout>
+
+        <org.adw.library.widgets.discreteseekbar.DiscreteSeekBar
+            android:id="@+id/page_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/layout_bottom"
+            android:layout_marginBottom="@dimen/imageviewer_seekbar_margin_lr"
+            android:layout_marginLeft="@dimen/imageviewer_seekbar_margin_lr"
+            android:layout_marginRight="@dimen/imageviewer_seekbar_margin_lr"
+            android:layout_marginTop="17.3dp"
+            app:dsb_min="1"
+            app:dsb_indicatorColor="#29abe2"
+            app:dsb_progressColor="#29abe2"
+            app:dsb_rippleColor="#29abe2"
+            app:dsb_trackColor="#ededed"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="250.5dp"
+            android:layout_alignParentBottom="true">
+
+            <com.kds3393.just.viewer.Music.MusicPlayerPanelView
+                android:id="@+id/image_music_panel"
+                android:layout_width="match_parent"
+                android:layout_height="250.5dp"
+                android:layout_marginTop="205dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+</RelativeLayout>

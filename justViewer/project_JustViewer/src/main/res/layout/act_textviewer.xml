@@ -1,0 +1,130 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical">
+
+    <com.kds3393.just.viewer.Text.TextViewer
+        android:id="@+id/txtviewer_viewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <com.kds3393.just.viewer.View.PageControlView
+        android:id="@+id/txt_layout_move_edit"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <RelativeLayout
+        android:id="@+id/txt_navi"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/txt_title"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/imageviewer_navi_title_height"
+            android:background="#b222252d"
+            android:gravity="center"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="1"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"/>
+
+        <LinearLayout
+            android:layout_width="72dp"
+            android:layout_height="51.2dp"
+            android:layout_alignParentRight="true"
+            android:orientation="vertical">
+
+            <com.kds3393.just.viewer.View.BatteryView
+                android:id="@+id/txt_battery"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:textSize="@dimen/imageviewer_navi_info_time_txt_size"/>
+
+            <com.kds3393.just.viewer.View.TimeTextView
+                android:id="@+id/txt_time"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:shadowColor="#FF000000"
+                android:shadowDx="1.0"
+                android:shadowDy="1.0"
+                android:shadowRadius="1.0"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/imageviewer_navi_info_time_txt_size"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navi_btm_layout"
+            android:layout_width="match_parent"
+            android:layout_height="51.2dp"
+            android:layout_alignParentBottom="true"
+            android:background="#b222252d"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/navi_btm_setting"
+                android:layout_width="38.4dp"
+                android:layout_height="38.4dp"
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/h_text_setting"/>
+
+            <Button
+                android:id="@+id/navi_btm_slide"
+                android:layout_width="38.4dp"
+                android:layout_height="38.4dp"
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/h_3d_media_play"/>
+
+            <Button
+                android:id="@+id/navi_btm_editmode"
+                android:layout_width="38.4dp"
+                android:layout_height="38.4dp"
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/h_move_button_edit"/>
+
+            <ImageView
+                android:id="@+id/navi_btm_hide_line"
+                android:layout_width="38.4dp"
+                android:layout_height="38.4dp"
+                android:layout_marginLeft="5dp"
+                android:src="@drawable/eye_off"/>
+        </LinearLayout>
+
+        <com.kds3393.just.viewer.Text.TextSettingPanel
+            android:id="@+id/navi_text_setting_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/navi_btm_layout"
+            android:layout_marginBottom="4dp"
+            android:layout_marginLeft="3dp"
+            android:layout_marginRight="3dp"
+            android:padding="7dp"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layout_navi"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="200.5dp"
+            android:layout_alignParentBottom="true">
+
+            <com.kds3393.just.viewer.Music.MusicPlayerPanelView
+                android:id="@+id/txt_music_panel"
+                android:layout_width="match_parent"
+                android:layout_height="200.5dp"
+                android:layout_marginTop="165dp"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+</RelativeLayout>

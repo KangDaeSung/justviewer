@@ -1,0 +1,19 @@
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListView
+        android:id="@+id/music_list"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/rect_round_stroke_gray_solid_white_alpha"
+        android:fadingEdgeLength="0dp"
+        android:padding="5dp" />
+
+    <ImageButton
+        android:id="@+id/side_open_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:background="@null"
+        android:src="@drawable/left_open" />
+</merge>

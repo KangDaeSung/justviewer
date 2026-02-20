@@ -1,0 +1,5 @@
+keytool -list -v -keystore justkey.jks -alias JustSeries -storepass justkey -keypass justkey
+
+SHA1: 65:62:53:E5:54:65:9D:59:8B:DF:8F:85:5F:1B:45:01:6B:13:A2:37
+SHA256: A0:0D:47:3E:91:76:66:65:98:7C:76:15:14:B7:6F:FA:FD:90:E9:52:23:9B:1C:91:BB:13:AC:A6:36:1D:D0:A4
+서명 알고리즘 이름: SHA256withRSA

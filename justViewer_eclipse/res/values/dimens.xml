@@ -1,0 +1,48 @@
+<resources>
+
+    <!-- MainView Layout -->
+    <dimen name="topbar_height">56dp</dimen>
+    <dimen name="top_icon_size">42.6dp</dimen>
+    <dimen name="top_icon_gap">15dp</dimen>
+    <dimen name="top_path_text_width">214.8dp</dimen>
+    <dimen name="top_path_text_size">10dp</dimen>
+    <dimen name="bottombar_height">50dp</dimen>
+    <dimen name="bottombar_icon_size">37.3dp</dimen>
+    <dimen name="bottombar_side_gap">10dp</dimen>
+    <dimen name="empty_text_size">12dp</dimen>
+    <dimen name="browser_height">504dp</dimen>
+    <dimen name="c">0dp</dimen>
+    
+    <!-- Tutorial Fragment -->
+    <dimen name="tutorial_circle_indicator_radius">13dp</dimen>
+
+    <!-- ImageViewer -->
+    <dimen name="imageviewer_page_move_btn_default_size">75dp</dimen>
+    <dimen name="imageviewer_page_move_btn_default_point">250dp</dimen>
+    <dimen name="imageviewer_page_move_btn_resize_size">40dp</dimen>
+    <dimen name="imageviewer_btn_edit_confirm_width">130dp</dimen>
+    <dimen name="imageviewer_btn_edit_confirm_height">48dp</dimen>
+    <dimen name="imageviewer_btn_edit_confirm_drawable_padding">5dp</dimen>
+    <dimen name="imageviewer_seekbar_height">48dp</dimen>
+    <dimen name="imageviewer_seekbar_margin_lr">10dp</dimen>
+    <dimen name="imageviewer_seekbar_thumb_offset">5dp</dimen>
+    <dimen name="imageviewer_seekbar_min_max_height">5dp</dimen>
+    <dimen name="imageviewer_thumb_image_width">130dp</dimen>
+    <dimen name="imageviewer_thumb_image_height">80dp</dimen>
+    <dimen name="imageviewer_thumb_text_height">25dp</dimen>
+    <dimen name="imageviewer_navi_page_width">72dp</dimen>
+    <dimen name="imageviewer_navi_page_txt_size">16dp</dimen>
+    <dimen name="imageviewer_navi_title_height">50dp</dimen>
+    <dimen name="imageviewer_navi_title_txt_size">18dp</dimen>
+    <dimen name="imageviewer_navi_info_layout_width">72dp</dimen>
+    <dimen name="imageviewer_navi_info_time_txt_size">11dp</dimen>
+    <dimen name="imageviewer_bottom_layout_width">57.6dp</dimen>
+    <dimen name="imageviewer_bottom_icon_size">38.4dp</dimen>
+    <dimen name="imageviewer_bottom_icon_margin">10dp</dimen>
+    <dimen name="imageviewer_bottom_gopage_width">100dp</dimen>
+    <dimen name="imageviewer_bottom_gopage_txt_size">14dp</dimen>
+    
+    <!-- TextViewer -->
+    <dimen name="textviewer_btn_size">35dp</dimen>
+    <dimen name="textviewer_btn_l">10dp</dimen>
+</resources>

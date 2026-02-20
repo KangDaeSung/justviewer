@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.kds3393.just.justviewer2.activity.ActMain"
+    tools:showIn="@layout/act_main">
+
+    <androidx.viewpager.widget.ViewPager
+        android:id="@+id/actMainViewpager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <com.kds3393.just.justviewer2.music.MusicListView
+        android:id="@+id/mainMusicList"
+        android:layout_width="360dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintHeight_percent="0.6"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible" />
+
+    <com.kds3393.just.justviewer2.music.MusicLyricsView
+        android:id="@+id/mainMusicLyrics"
+        android:layout_width="360dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.6"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="250.5dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.kds3393.just.justviewer2.music.MusicPlayerPanelView
+            android:id="@+id/mainMusicPanel"
+            android:layout_width="match_parent"
+            android:layout_height="250.5dp"
+            android:layout_marginTop="205dp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/frmSubLocalContainer"
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

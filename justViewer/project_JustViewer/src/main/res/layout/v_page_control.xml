@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.kds3393.just.viewer.View.MoveScaleButton
+        android:id="@+id/page_move_prev"
+        android:layout_width="@dimen/imageviewer_page_move_btn_default_size"
+        android:layout_height="@dimen/imageviewer_page_move_btn_default_size"
+        android:textColor="@android:color/white" />
+
+    <com.kds3393.just.viewer.View.MoveScaleButton
+        android:id="@+id/page_move_next"
+        android:layout_width="@dimen/imageviewer_page_move_btn_default_size"
+        android:layout_height="@dimen/imageviewer_page_move_btn_default_size"
+        android:gravity="center"
+        android:textColor="@android:color/white" />
+
+    <com.kds3393.just.viewer.View.ResizeButton
+        android:id="@+id/page_move_prev_resize"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:background="@drawable/h_resize"
+        android:gravity="center" />
+
+    <com.kds3393.just.viewer.View.ResizeButton
+        android:id="@+id/page_move_next_resize"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:background="@drawable/h_resize" />
+
+    <Button
+        android:id="@+id/page_edit_close"
+        android:layout_width="100dp"
+        android:layout_height="40dp"
+        android:layout_alignParentRight="true"
+        android:drawableLeft="@drawable/close"
+        android:text="설정 완료"
+        android:visibility="gone" />
+
+</merge>

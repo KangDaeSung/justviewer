@@ -1,0 +1,3 @@
+include ':app', ':CommonUtils', ':sardine'
+project(':CommonUtils').projectDir = new File('project_CommonUtils')
+project(':sardine').projectDir = new File('sardine_android')

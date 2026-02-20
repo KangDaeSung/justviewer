@@ -1,0 +1,153 @@
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    app:cardBackgroundColor="#ffffff"
+    app:cardCornerRadius="10dp"
+    app:cardPreventCornerOverlap="true"
+    app:contentPadding="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/rename_tools_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="교체" />
+
+        <LinearLayout
+            android:id="@+id/v_spinner_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="삭제할 기준위치"
+                android:textSize="10sp" />
+
+            <androidx.appcompat.widget.AppCompatSpinner
+                android:id="@+id/v_spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rename_tools_input1_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/rename_tools_input1_title"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="찾을 문자"
+                android:textSize="10sp" />
+
+            <Button
+                android:id="@+id/rename_tools_number1_dec_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="감소" />
+
+            <EditText
+                android:id="@+id/rename_tools_input1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/rename_tools_number1_inc_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="증가" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rename_tools_input2_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/rename_tools_input2_title"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="바꿀 문자"
+                android:textSize="10sp" />
+
+            <Button
+                android:id="@+id/rename_tools_number2_dec_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="감소" />
+
+            <EditText
+                android:id="@+id/rename_tools_input2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/rename_tools_number2_inc_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="증가" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="25dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/cancel_btn"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/rect_round_t_c6c6c6_15dp_1dp"
+                android:gravity="center"
+                android:text="종료" />
+
+            <TextView
+                android:id="@+id/ok_btn"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="25dp"
+                android:background="@drawable/rect_round_7c79e1_15dp_1_7dp"
+                android:gravity="center"
+                android:text="적용" />
+
+            <TextView
+                android:id="@+id/ok_preview"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="25dp"
+                android:background="@drawable/rect_round_7c79e1_15dp_1_7dp"
+                android:gravity="center"
+                android:text="미리보기" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

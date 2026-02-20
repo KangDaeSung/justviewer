@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/movie_root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:soundEffectsEnabled="false">
+
+    <com.kds3393.just.viewer.Movie.MovieViewer
+        android:id="@+id/movie_viewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true" />
+
+    <TextView
+        android:id="@+id/movie_smi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="4"
+        android:textColor="@android:color/white"
+        android:textSize="17sp" />
+
+    <com.kds3393.just.viewer.Movie.MovieController
+        android:id="@+id/movie_controller"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</RelativeLayout>

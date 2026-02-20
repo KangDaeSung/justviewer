@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/round_rect_white_bg"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="37dp"
+                android:layout_marginTop="38dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/alertTitleText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="18dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_horizontal"
+                    android:textColor="#7c79e1"
+                    android:textSize="20dp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:text="Title"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/alertText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textColor="#555555"
+                    android:textSize="15dp"
+                    android:textStyle="bold"
+                    tools:text="You don't remember your ID?" />
+
+                <TextView
+                    android:id="@+id/alertSubText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_horizontal"
+                    android:text=""
+                    android:textColor="#555555"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="gone" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="25dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/cancelBtn"
+                        android:layout_width="80dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center_horizontal"
+                        android:background="@drawable/rect_round_t_c6c6c6_15dp_1dp"
+                        android:gravity="center"
+                        android:text="Cancel" />
+
+                    <TextView
+                        android:id="@+id/okBtn"
+                        android:layout_width="80dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginLeft="25dp"
+                        android:background="@drawable/rect_round_7c79e1_15dp_1_7dp"
+                        android:gravity="center"
+                        android:text="OK" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

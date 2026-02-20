@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
+
+    <com.kds3393.just.viewer.Text.VTextListView
+        android:id="@+id/dlg_text_setting_exam_lv"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"/>
+
+    <com.kds3393.just.viewer.Text.TextSettingPanel
+        android:id="@+id/dlg_text_setting_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"/>
+</LinearLayout>

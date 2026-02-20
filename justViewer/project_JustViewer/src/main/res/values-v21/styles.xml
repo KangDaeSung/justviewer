@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#FF4081</item>
+        <item name="android:colorPrimary">#3F51B5</item>
+        <item name="android:colorPrimaryDark">#6aaec1</item>
+        <item name="android:colorControlHighlight">#00CC55</item>
+        <item name="android:colorControlNormal">#FF0000</item>
+    </style>
+
+    <style name="AppThemeFullScreen" parent="android:Theme.Material.Light.NoActionBar.Fullscreen">
+        <item name="android:colorAccent">#FF4081</item>
+        <item name="android:colorPrimary">#3F51B5</item>
+        <item name="android:colorPrimaryDark">#6aaec1</item>
+        <item name="android:colorControlHighlight">#00CC55</item>
+        <item name="android:colorControlNormal">#FF0000</item>
+    </style>
+</resources>

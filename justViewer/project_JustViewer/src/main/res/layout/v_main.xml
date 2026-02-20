@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/top_menu"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/topbar_height"
+            android:background="#6aaec1">
+
+            <com.kds3393.just.viewer.View.MenuView
+                android:id="@+id/menu"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/path_txt"
+                android:layout_width="@dimen/top_path_text_width"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="72.6dp"
+                android:gravity="center_vertical"
+                android:textColor="#f4f6f6"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/favo_btn"
+                android:layout_width="@dimen/top_icon_size"
+                android:layout_height="@dimen/top_icon_size"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="@dimen/top_icon_gap"
+                android:background="@drawable/selector_favorite_btn"
+                android:visibility="gone" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:id="@+id/main_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:animateLayoutChanges="true"
+            android:clickable="true"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:soundEffectsEnabled="false">
+
+            <LinearLayout
+                android:id="@+id/favo_l"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/z_paper1"
+                android:orientation="horizontal">
+
+                <com.kds3393.just.viewer.Activity.FavoriteList
+                    android:id="@+id/favo_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:cacheColorHint="@android:color/transparent" />
+
+                <TextView
+                    android:id="@+id/favo_empty_txt"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="즐겨찾기가 없습니다.\n자주가는 폴더를 즐겨찾기에 추가하실수 있습니다."
+                    android:textSize="20sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <com.kds3393.just.viewer.Browser.BrowserView
+                android:id="@+id/browser_v"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/z_paper2"
+                android:cacheColorHint="@android:color/transparent"
+                android:clickable="true"
+                android:soundEffectsEnabled="false" />
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/function_l"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:background="#22252d"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/main_music_play"
+                android:layout_width="@dimen/bottombar_icon_size"
+                android:layout_height="@dimen/bottombar_icon_size"
+                android:layout_marginLeft="@dimen/bottombar_side_gap"
+                android:background="@drawable/h_media_play"
+                android:visibility="invisible" />
+
+            <Button
+                android:id="@+id/main_add_favo"
+                android:layout_width="@dimen/bottombar_icon_size"
+                android:layout_height="@dimen/bottombar_icon_size"
+                android:layout_marginLeft="@dimen/bottombar_side_gap"
+                android:background="@drawable/h_star"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/main_setting"
+                android:layout_width="@dimen/bottombar_icon_size"
+                android:layout_height="@dimen/bottombar_icon_size"
+                android:layout_alignParentRight="true"
+                android:layout_marginRight="@dimen/bottombar_side_gap"
+                android:background="@drawable/h_setting1" />
+
+            <Button
+                android:id="@+id/main_delete"
+                android:layout_width="@dimen/bottombar_icon_size"
+                android:layout_height="@dimen/bottombar_icon_size"
+                android:layout_marginRight="@dimen/bottombar_side_gap"
+                android:layout_toLeftOf="@id/main_setting"
+                android:background="@drawable/h_media_delete"
+                android:visibility="gone" />
+        </RelativeLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="450dp"
+        android:layout_marginTop="5dp">
+
+        <com.kds3393.just.viewer.Music.MusicLyricsView
+            android:id="@+id/main_music_lyrics"
+            android:layout_width="410dp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="380dp"
+            android:visibility="gone" />
+
+        <com.kds3393.just.viewer.Music.MusicListView
+            android:id="@+id/main_music_list"
+            android:layout_width="410dp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="-375dp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="250.5dp"
+        android:layout_alignParentBottom="true">
+
+        <com.kds3393.just.viewer.Music.MusicPlayerPanelView
+            android:id="@+id/main_music_panel"
+            android:layout_width="match_parent"
+            android:layout_height="250.5dp"
+            android:layout_marginTop="205dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</RelativeLayout>

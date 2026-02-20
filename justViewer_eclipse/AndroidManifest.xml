@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.kds3393.just.viewer"
+    android:versionCode="13"
+    android:versionName="1.9.5" >
+	
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	<uses-permission android:name="android.permission.WRITE_SETTINGS" />
+	<uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+	
+    <uses-sdk
+        android:minSdkVersion="12"
+        android:targetSdkVersion="12" />
+
+    <application
+        android:largeHeap="true"
+        android:allowBackup="true"
+        android:icon="@drawable/icon"
+        android:label="JustViewer"
+        android:theme="@style/android:Theme.Holo" 
+        android:name="com.kds3393.just.viewer.JustViewerApp">
+        <activity
+            android:name="com.kds3393.just.viewer.Activity.ActJustViewer"
+            android:label="JustViewer" 
+            android:screenOrientation="portrait"
+            android:theme="@android:style/android:Theme.Holo.NoActionBar"
+            android:configChanges="keyboardHidden|orientation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.kds3393.just.viewer.Image.ImageViewerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/android:Theme.Holo.NoActionBar.Fullscreen"
+            android:windowSoftInputMode="adjustPan"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+        
+        <activity android:name="com.kds3393.just.viewer.Movie.MoviePlayerActivity"
+            android:theme="@android:style/android:Theme.Holo.NoActionBar.Fullscreen"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+        
+        <activity android:name="com.kds3393.just.viewer.Browser.FileBrowserActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+        
+        <activity android:name="com.kds3393.just.viewer.Text.TextViewerActivity"
+            android:theme="@android:style/android:Theme.Holo.NoActionBar.Fullscreen"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+        <activity android:name="com.kds3393.just.viewer.Config.SettingActivity"
+            android:theme="@android:style/android:Theme.Holo.NoActionBar.Fullscreen"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+        <activity android:name="com.kds3393.just.viewer.Config.HelpActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
+            android:configChanges="keyboardHidden|orientation">
+        </activity>
+         
+		<service android:name="com.kds3393.just.viewer.Music.MusicService" android:enabled="true">
+		      <intent-filter>
+		           <action android:name="com.kds3393.playmusic">
+		      </action></intent-filter>
+		</service>
+
+        <provider android:name="com.kds3393.just.viewer.provider.Provider"
+            android:authorities="com.kds3393.just.viewer.provider" />
+    </application>
+
+</manifest>
