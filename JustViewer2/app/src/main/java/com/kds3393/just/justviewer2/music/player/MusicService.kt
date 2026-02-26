@@ -1,38 +1,36 @@
 package com.kds3393.just.justviewer2.music.player
 
 import android.annotation.SuppressLint
-import android.app.*
+import android.app.Notification
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.*
+import android.os.Binder
+import android.os.Build
+import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
-import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
-import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import common.lib.utils.FileUtils
-import common.lib.utils.SharedBus
-import common.lib.debug.CLog
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
-import com.google.firebase.crashlytics.ktx.crashlytics
-import com.google.firebase.crashlytics.ktx.setCustomKeys
-import com.google.firebase.ktx.Firebase
-import com.kds3393.just.justviewer2.R
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.kds3393.just.justviewer2.activity.SettingActivity.Companion.getMusicListShuffle
 import com.kds3393.just.justviewer2.music.PlayerManager
 import com.kds3393.just.justviewer2.utils.ACTION
 import com.kds3393.just.justviewer2.utils.Event
+import common.lib.debug.CLog
+import common.lib.utils.FileUtils
+import common.lib.utils.SharedBus
 import java.io.File
-import java.util.*
 
 var telephonyListerCount = 0
+
 class MusicService : LifecycleService() {
     var playFolderPath: String? = null
         private set
@@ -41,7 +39,9 @@ class MusicService : LifecycleService() {
     private var isForegroundService = false
     private lateinit var notifManager: NotiManager
     lateinit var mediaSession: MediaSessionCompat
-    private fun showNotification(title: String?, isPlay: Boolean) {
+
+    // Warning 해결: 사용하지 않는 title, isPlay 파라미터 제거
+    private fun showNotification() {
         notifManager.showNotificationForPlayer(mPlayerManager.exoPlayer)
     }
 
@@ -54,7 +54,8 @@ class MusicService : LifecycleService() {
             }
         }
         override fun onNotificationCancelled(notificationId: Int, dismissedByUser: Boolean) {
-            stopForeground(true)
+            // Warning 해결: 최신 stopForeground API 파라미터 적용
+            stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundService = false
             stopSelf()
         }
@@ -62,27 +63,14 @@ class MusicService : LifecycleService() {
 
     private val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.e(TAG, "KDS3393_TEST_receive action = " + intent.action)
-            if (intent.action == MUSIC_NOTIFICATION_CLICK) {
-                if (intent.getIntExtra("ID", 0) == R.id.prev_btn) {
-                    movePrev()
-                } else if (intent.getIntExtra("ID", 0) == R.id.play_pause) {
-                    if (mPlayerManager.isPlaying()) {
-                        pause()
-                    } else {
-                        play()
-                    }
-                    showNotification(null, mPlayerManager.isPlaying())
-                } else if (intent.getIntExtra("ID", 0) == R.id.next_btn) {
-                    moveNext(false)
-                }
-            } else if (intent.action == MUSIC_NOTIFICATION_DISMISS) {
+            if (intent.action == MUSIC_NOTIFICATION_DISMISS) {
                 stop()
             }
         }
     }
 
     private var mIsErrorCompletion = false //error -38로 인해 음악이 중도 끝난 이후 onCompletion이 발생하였을 경우 true
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
@@ -96,7 +84,6 @@ class MusicService : LifecycleService() {
             isActive = true
         }
 
-        CLog.e("KDS3393_TEST_NOTI 1 sessionToken = ${mediaSession.sessionToken}")
         notifManager = NotiManager(this, mediaSession.sessionToken, PlayerNotificationListener())
 
         mPlayerManager = PlayerManager(baseContext)
@@ -110,7 +97,8 @@ class MusicService : LifecycleService() {
                     ExoPlayer.STATE_READY -> {
                         CLog.d("MusicService STATE_READY")
                         if (mPlayerManager.musicList.size <= 0) return@register
-                        showNotification(event.musicInfo?.mTitle, true)
+                        // Warning 해결: 파라미터가 제거된 showNotification 호출
+                        showNotification()
                     }
                     ExoPlayer.STATE_IDLE -> CLog.d("MusicService STATE_IDLE")
                     ExoPlayer.STATE_ENDED -> {
@@ -138,48 +126,29 @@ class MusicService : LifecycleService() {
         }
     }
 
-    //전화 수신 이벤트 리스너 등록, 너무 많은 리스너를 등록할경우 오류가 나기 때문에 등록 위치를 확인해봐야 함
+    //전화 수신 이벤트 리스너 등록
     private fun registerTelephonyListener() {
-        Firebase.crashlytics.setCustomKeys {
-            telephonyListerCount++
-            key("telephonyListerCount", telephonyListerCount)
-        }
-        val telMgr = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            //전화가 오면 음악음 멈추기 위해 TelephonyManager에 등록할 Callback (SDK 31이상)
-            telMgr.registerTelephonyCallback(baseContext.mainExecutor, object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-                private var mIsCallPause = false
-                override fun onCallStateChanged(state: Int) {
-                    when (state) {
-                        TelephonyManager.CALL_STATE_IDLE -> if (mIsCallPause) {
-                            mIsCallPause = false
-                            play()
-                        }
-                        TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> if (mPlayerManager.isPlaying()) {
-                            mIsCallPause = true
-                            pause()
-                        }
-                    }
-                }
-            })
-        } else {
-            telMgr.listen(object : PhoneStateListener() {
-                private var mIsCallPause = false
-                override fun onCallStateChanged(state: Int, incomingNumber: String) {
-                    when (state) {
-                        TelephonyManager.CALL_STATE_IDLE -> if (mIsCallPause) {
-                            mIsCallPause = false
-                            play()
-                        }
-                        TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> if (mPlayerManager.isPlaying()) {
-                            mIsCallPause = true
-                            pause()
-                        }
-                    }
-                }
-            }, PhoneStateListener.LISTEN_CALL_STATE)
-        }
+        telephonyListerCount++
+        // Warning 해결: 메인 모듈 API로 Crashlytics 키 설정 방식 최신화
+        FirebaseCrashlytics.getInstance().setCustomKey("telephonyListerCount", telephonyListerCount)
 
+        val telMgr = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+
+        telMgr.registerTelephonyCallback(baseContext.mainExecutor, object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+            private var mIsCallPause = false
+            override fun onCallStateChanged(state: Int) {
+                when (state) {
+                    TelephonyManager.CALL_STATE_IDLE -> if (mIsCallPause) {
+                        mIsCallPause = false
+                        play()
+                    }
+                    TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> if (mPlayerManager.isPlaying()) {
+                        mIsCallPause = true
+                        pause()
+                    }
+                }
+            }
+        })
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -234,18 +203,11 @@ class MusicService : LifecycleService() {
         super.onDestroy()
     }
 
-    // Binder given to clients
     private val mBinder: IBinder = LocalBinder()
 
-    /**
-     * Class used for the client Binder.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with IPC.
-     */
     inner class LocalBinder : Binder() {
-        // Return this instance of LocalService so clients can call public methods
         val service: MusicService
-            get() = // Return this instance of LocalService so clients can call public methods
-                this@MusicService
+            get() = this@MusicService
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -253,9 +215,7 @@ class MusicService : LifecycleService() {
         return mBinder
     }
 
-    fun isFolderPlaying(path: String?): Boolean {
-        return mPlayerManager.isPlaying() && playFolderPath != null && playFolderPath.equals(path, ignoreCase = true)
-    }
+    // Warning 242 해결: 사용하지 않는 isFolderPlaying 제거
 
     val playIndex: Int
         get() = if (mPlayerManager.musicList.size > 0) mPlayerManager.mIndex else -1
@@ -345,7 +305,7 @@ class MusicService : LifecycleService() {
     }
 
     companion object {
-        private const val TAG = "MusicService"
+        // Warning 334 해결: 사용되지 않던 TAG 변수 삭제
         const val EXTRA_MUSIC_FILE_LIST = "just_music_file_list"
         const val EXTRA_MUSIC_FOLDER_PATH = "just_music_folder_path"
         const val MUSIC_NOTIFICATION_CLICK = "music_notifaction_click"

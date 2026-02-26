@@ -1,7 +1,10 @@
 package com.kds3393.just.justviewer2.fragment
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
@@ -43,9 +47,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -61,7 +65,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -76,10 +79,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import com.kds3393.just.justviewer2.R
 import com.kds3393.just.justviewer2.activity.ActBase
+import com.kds3393.just.justviewer2.activity.ActMain
 import com.kds3393.just.justviewer2.compose.CIcon
 import com.kds3393.just.justviewer2.compose.CText
 import com.kds3393.just.justviewer2.compose.Colors
@@ -90,8 +94,11 @@ import com.kds3393.just.justviewer2.compose.clickableOnce
 import com.kds3393.just.justviewer2.compose.dp2sp
 import com.kds3393.just.justviewer2.data.FileData
 import com.kds3393.just.justviewer2.db.DBMgr
+import com.kds3393.just.justviewer2.image.ActImageViewer
 import com.kds3393.just.justviewer2.renamer.ActRenamer
+import com.kds3393.just.justviewer2.text.ActTextViewerJC
 import com.kds3393.just.justviewer2.utils.Event
+import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import common.lib.utils.SharedBus
 import java.io.File
@@ -280,11 +287,6 @@ class FrmLocalJC : FrmBase() {
         val file = File(currentPath)
         loadFileLists(file.parent)
         return true
-    }
-
-    private fun changeSelectionMode(enabled: Boolean) {
-        isSelectionMode = enabled
-        if (!enabled) selectedItems.clear()
     }
 
     // [추가] 검색 모드 종료
@@ -522,18 +524,18 @@ class FrmLocalJC : FrmBase() {
                                 } else {
                                     val file = File(fileData.mPath)
                                     if (activity is ActBase) {
-                                        (activity as ActBase).startViewer(file, null)
+                                        FileManager.startViewer(activity as ActBase, file, null)
                                     }
                                 }
                             },
                             onCheckToggle = {
                                 if (!isSelectionMode) {
-                                    changeSelectionMode(true)
+                                    isSelectionMode = true
                                 }
                                 toggleItemSelection(fileData)
                             }
                         )
-                        Divider(color = Colors.Gray200, thickness = 0.5.dp)
+                        HorizontalDivider(color = Colors.Gray200, thickness = 0.5.dp)
                     }
                 }
 
@@ -622,9 +624,6 @@ class FrmLocalJC : FrmBase() {
         maxLines: Int = 1,
         overflow: TextOverflow = TextOverflow.Ellipsis
     ) {
-        var scaledFontSize by remember(text, query) { mutableStateOf(fontSize) }
-        var readyToDraw by remember(text, query) { mutableStateOf(false) }
-
         val annotatedString = buildAnnotatedString {
             if (query.isEmpty()) {
                 append(text)
@@ -645,25 +644,17 @@ class FrmLocalJC : FrmBase() {
 
         Text(
             text = annotatedString,
-            modifier = modifier.drawWithContent {
-                if (readyToDraw) drawContent()
-            },
             color = color,
-            fontSize = scaledFontSize,
+            fontSize = fontSize,
             maxLines = maxLines,
             overflow = overflow,
             softWrap = false,
-            onTextLayout = { textLayoutResult ->
-                if (textLayoutResult.hasVisualOverflow) {
-                    if (scaledFontSize.value > 8f) {
-                        scaledFontSize = (scaledFontSize.value * 0.9).sp
-                    } else {
-                        readyToDraw = true // 최소 크기까지 줄였음에도 크면 그대로 출력
-                    }
-                } else {
-                    readyToDraw = true // 범위를 넘지 않았으므로 그리기 시작
-                }
-            }
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 8.dp2sp,
+                maxFontSize = fontSize,
+                stepSize = 1.dp2sp
+            ),
+            modifier = modifier
         )
     }
 
@@ -751,17 +742,6 @@ class FrmLocalJC : FrmBase() {
                 modifier = Modifier.click(showRipple = false, onClick = onRename).padding(horizontal = 10.dp)
             )
         }
-    }
-
-    @Composable
-    fun ActionIcon(resId: Int, onClick: () -> Unit) {
-        CIcon(
-            painter = painterResource(id = resId),
-            contentDescription = null,
-            modifier = Modifier
-                .padding(10.dp)
-                .clickableOnce(onClick = onClick)
-        )
     }
 
     @Composable
@@ -881,5 +861,51 @@ object FileManager {
             "txt", "smi", "log" -> Icons.AutoMirrored.Outlined.TextSnippet
             else -> Icons.AutoMirrored.Default.InsertDriveFile
         }
+    }
+
+    fun startViewer(context: Context, file: File, fileDatas: ArrayList<FileData>?) {
+        val array = ArrayList<String>()
+        val extension = FileUtils.getExtension(file.name)
+        if (fileDatas == null) {
+            array.add(file.path)
+        } else {
+            for (f in fileDatas) {
+                array.add(f.mPath)
+            }
+        }
+        if (extension.equals("zip", ignoreCase = true)) {
+            val intent = Intent(context, ActImageViewer::class.java)
+            intent.putExtra(ActMain.EXTRA_BROWSER_PATH, file.absolutePath)
+            if (array.isNotEmpty()) {
+                intent.putExtra(ActMain.EXTRA_BROWSER_PATH_ARRAY, array)
+            }
+            context.startActivity(intent)
+        } else if (extension.equals("avi", ignoreCase = true) || extension.equals("mp4", ignoreCase = true) || extension.equals("wmv", ignoreCase = true) || extension.equals("mkv", ignoreCase = true)) {
+            val intent = Intent(Intent.ACTION_VIEW, file.path.toUri())
+            intent.setDataAndType(file.path.toUri(), "video/mp4")
+            context.startActivity(intent)
+        } else if (extension.equals("txt", ignoreCase = true) || extension.equals("smi", ignoreCase = true) || extension.equals("log", ignoreCase = true)) {
+            val intent = Intent(context, ActTextViewerJC::class.java)
+            intent.putExtra(ActMain.EXTRA_BROWSER_PATH, file.absolutePath)
+            context.startActivity(intent)
+        } else if (extension.equals("epub", ignoreCase = true)) {
+//            val fileUri = FileProvider.getUriForFile(this, FileUriProvider, file)
+//            CLog.e("KDS3393_TEST_file\n" +
+//                    "path[${Uri.fromFile(file)}]\n" +
+//                    "fileUri[$fileUri]")
+//            startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(fileUri, "application/epub+zip"))
+
+            CLog.e("KDS3393_TEST_file\n" + "path[${getPath(context, Uri.fromFile(file))}]")
+        }
+    }
+
+    fun getPath(context:Context, uri: Uri?): String? {
+        val projection = arrayOf(MediaStore.Video.Media.DATA)
+        val cursor = context.contentResolver.query(uri!!, projection, null, null, null) ?: return null
+        val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        val s = cursor.getString(columnIndex)
+        cursor.close()
+        return s
     }
 }

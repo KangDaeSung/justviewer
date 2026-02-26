@@ -7,8 +7,9 @@ import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.GestureDetector.OnDoubleTapListener
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
-import android.widget.Scroller
+import android.widget.OverScroller
 import androidx.core.view.doOnLayout
 import com.kds3393.just.justviewer2.config.SettingImageViewer
 import com.kds3393.just.justviewer2.config.SharedPrefHelper
@@ -19,16 +20,17 @@ import com.kds3393.just.justviewer2.dialog.DlgAlert
 import com.kds3393.just.justviewer2.utils.CToast
 import com.kds3393.just.justviewer2.utils.SubStringComparator
 import com.kds3393.just.justviewer2.utils.glide.ZipData
+import common.lib.base.ActBaseLib
 import common.lib.base.getFileName
 import common.lib.base.hide
 import common.lib.base.show
-import common.lib.base.ActBaseLib
 import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import java.io.File
-import java.util.*
+import java.util.ArrayDeque
+import java.util.Collections
 import kotlin.math.abs
-import kotlin.math.sqrt
+import androidx.core.view.isEmpty
 
 const val ZOOM_NONE = -1        //최초 미설정
 const val ZOOM_HALF_SCREEN = 0  //화면의 2배로 늘려 확대해서 본다. 가로가 긴 이미지를 좌우 스크롤로 볼수 있다.
@@ -38,7 +40,7 @@ const val ZOOM_USER_CUSTOM = 3
 
 class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : ImageViewerConfig(context,attrs), GestureDetector.OnGestureListener, OnDoubleTapListener {
     private val mAct: ActBaseLib
-    private val linkedViews = LinkedList<PageView>()
+    private val linkedViews = ArrayDeque<PageView>()
     private var mIsFirstView = true
     private var mOnPageSelectedListener: OnPageSelectedListener? = null
     fun setOnPageSelectedListener(listener: OnPageSelectedListener?) {
@@ -53,10 +55,11 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private var mGestureDetector: GestureDetector? = null
+    private val mScaleGestureDetector: ScaleGestureDetector
     init {
         mAct = ActBaseLib.unwrap(context)
         mGestureDetector = GestureDetector(context, this)
-
+        mScaleGestureDetector = ScaleGestureDetector(context, ScaleListener())
         for (index in 0 until 3) {
             linkedViews.add(pageViewMaker(getContext(), this, index))
         }
@@ -64,9 +67,8 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     fun setup(info: BookInfo) : Boolean{
         bookInfo = info
-        CLog.e("KDS3393_TEST_setup bookInfo = $bookInfo")
+        CLog.e("KDS3393_TEST_setup zoomType[${bookInfo.zoomType}] bookInfo = $bookInfo")
         doOnLayout {
-            CLog.e("KDS3393_TEST_setup doOnLayout size[$width,$height] zoomType[${bookInfo.zoomType}]")
             setViewSize(width,height)
             linkedViews.forEach {page ->
                 page.parentViewSize.Width = width
@@ -87,15 +89,15 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private fun getPrevPage() : PageView {
-        return linkedViews[0]
+        return linkedViews.first()
     }
 
     private fun getCenterPage() : PageView {
-        return linkedViews[1]
+        return linkedViews.elementAt(1)
     }
 
     private fun getNextPage() : PageView {
-        return linkedViews[2]
+        return linkedViews.last()
     }
 
     fun moveRight() {
@@ -187,8 +189,8 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         }
     }
 
-    private fun getHalfPage(view: View?): Int {
-        return if (view!!.width > view.height) {
+    private fun getHalfPage(view: View): Int {
+        return if (view.width > view.height) {
             view.width / 2
         } else {
             view.width
@@ -244,11 +246,18 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
      * 이미지 로딩
      */
     private fun setView(pageView: PageView, pageIndex: Int) {
-        if (pageIndex < 0 || pageIndex >= bookInfo.entryArray.size) return
+        if (pageIndex < 0 || pageIndex >= bookInfo.entryArray.size) {
+            pageView.clearImage() // 위에서 만든 메모리 해제 함수 호출
+            pageView.hide()
+            return
+        }
 
         pageView.pageIndex = pageIndex
         val imageZipEntry = bookInfo.entryArray[pageIndex]
         pageView.loadImage(ZipData(bookInfo.targetPath,imageZipEntry,width, height)) {
+            if (pageView.imageHeight == 0 || pageView.imageWidth == 0 || bookInfo.viewSize.Width == 0) {
+                return@loadImage
+            }
             var topMargin = 0
             val width : Int
             val height : Int
@@ -285,7 +294,6 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private fun setZoomType(zoomType:Int, zoomStandardHeight:Int? = null) {
-        CLog.e("KDS3393_TEST_setZoomType = ${PageView.getZoomTypeStr(zoomType)}")
         bookInfo.zoomType = zoomType
         zoomStandardHeight?.let { bookInfo.zoomStandardHeight = it }
         linkedViews.forEach { page ->
@@ -297,96 +305,40 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private var mDistance = 0
     private val mFlingRunnable: FlingRunnable = FlingRunnable()
     private val mBlockLayoutRequests = false
-    private var beforeMultiTouchDistance = 0f
     private var mIsScaling = false
     private var mOldWidth = 0
     private var mOldHeight = 0
     private var mOldLeft = 0
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (isBlockTouch) {
-            return true
-        }
+        if (isBlockTouch) return true
+
+        // 1. ScaleGestureDetector에 이벤트 위임 (멀티 터치 줌 처리)
+        mScaleGestureDetector.onTouchEvent(event)
+
         val action = event.action
+
+        // 2. 멀티 터치 중(pointerCount > 1)일 때는 일반 스크롤/플링(GestureDetector) 처리 무시
         if (event.pointerCount > 1) {
-            val distance = spacing(event)
-            if (action > MotionEvent.ACTION_MASK) {
-                if (action == MotionEvent.ACTION_POINTER_2_DOWN) {
-                    beforeMultiTouchDistance = distance
-                    mOldWidth = getCenterPage().width
-                    mOldHeight = getCenterPage().height
-                    mOldLeft = getCenterPage().left
-                }
-                return true
-            }
+            return true
+        } else {
+            // 3. 싱글 터치에 대한 제스처 처리
             when (action) {
                 MotionEvent.ACTION_DOWN -> {
-                    beforeMultiTouchDistance = distance
-                    mOldWidth = getCenterPage().width
-                    mOldHeight = getCenterPage().height
-                    mOldLeft = getCenterPage().left
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (mIsScaling) {
-                        return true
+                    if (!mFlingRunnable.isFinished) {
+                        onFinishedMovement()
+                        mFlingRunnable.stop(false)
                     }
-                    mIsScaling = true
-                    val movDistance = distance - beforeMultiTouchDistance
-                    if (abs(movDistance) >= 1) {
-                        var height = (mOldHeight + movDistance).toInt()
-                        if (height > bookInfo.viewSize.Height) {
-                            mIsScaling = false
-                            return true
-                        }
-                        var scale = height.toFloat() / mOldHeight.toFloat()
-                        var width = (mOldWidth.toFloat() * scale).toInt()
-                        if (width < bookInfo.viewSize.Width) {
-                            scale = bookInfo.viewSize.Width.toFloat() / mOldWidth.toFloat()
-                            width = bookInfo.viewSize.Width
-                            height = (mOldHeight.toFloat() * scale).toInt()
-                        }
-                        var left = (mOldLeft - movDistance / 2).toInt()
-                        if (left > 0) left = 0
-                        var right = left + width
-                        if (right < bookInfo.viewSize.Width) {
-                            right = bookInfo.viewSize.Width
-                            left = right - width
-                        }
-                        var topMargin = (bookInfo.viewSize.Height - height) / 2
-                        if (topMargin < 0) topMargin = 0
-                        getCenterPage().layout(left, topMargin, right, topMargin + height)
-                        invalidate()
-                        setZoomType(ZOOM_USER_CUSTOM,height)
-                    }
-                    mIsScaling = false
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {}
-            }
-        } else {
-            when (action) {
-                MotionEvent.ACTION_DOWN -> if (!mFlingRunnable.isFinished) {
-                    onFinishedMovement()
-                    mFlingRunnable.stop(false)
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (beforeMultiTouchDistance == 0f) {
-                        val fling = mGestureDetector!!.onTouchEvent(event)
-                        if (!fling) onUp()
-                    } else {
-                        beforeMultiTouchDistance = 0f
-                    }
+                    val fling = mGestureDetector!!.onTouchEvent(event)
+                    if (!fling) onUp()
                     return true
                 }
             }
-            if (beforeMultiTouchDistance == 0f) mGestureDetector!!.onTouchEvent(event)
+            mGestureDetector!!.onTouchEvent(event)
         }
         return true
-    }
-
-    private fun spacing(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return sqrt((x * x + y * y).toDouble()).toFloat()
     }
 
     private fun setInitLayout() {
@@ -407,7 +359,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private fun scrollIntoSlots() {
-        if (childCount == 0) return
+        if (isEmpty()) return
         val rightPos = bookInfo.viewSize.Width - getCenterPage().right - mSpacing
         if (getCenterPage().right > 0 && bookInfo.viewSize.Width != rightPos && rightPos > -mSpacing) { // next View와 화면 공유 중
             val center = rightPos - movePageHThreshold
@@ -438,7 +390,6 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private fun onFinishedMovement() {
-        CLog.e("KDS3393_TEST_scroll onFinishedMovement currentPage[${bookInfo.currentPage}]")
         if (getCenterPage().right >= bookInfo.viewSize.Width && getCenterPage().left <= 0) {
             return
         }
@@ -456,11 +407,11 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         }
 
         if (newCenterId == 0) {
-            val first = linkedViews.removeLast()
-            linkedViews.addFirst(first)
+            val last = linkedViews.removeLast()
+            linkedViews.addFirst(last)
         } else if (newCenterId == 2) {
-            val last = linkedViews.removeFirst()
-            linkedViews.addLast(last)
+            val first = linkedViews.removeFirst()
+            linkedViews.addLast(first)
         }
         linkedViews.forEachIndexed { index, pageView ->
             pageView.viewId = index
@@ -485,7 +436,8 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-        return mFlingRunnable.startUsingVelocity((velocityX * 0.7).toInt())
+//        return mFlingRunnable.startUsingVelocity((velocityX * 0.7).toInt())
+        return mFlingRunnable.startUsingVelocity(velocityX.toInt())
     }
 
     override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
@@ -569,7 +521,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private inner class FlingRunnable : Runnable {
         var isFinished = true
             private set
-        private val mScroller = Scroller(context)
+        private val mScroller = OverScroller(context)
         private var mLastFlingX = 0
 
         private fun startCommon() {
@@ -588,16 +540,20 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             val limitMax = getCenterPage().right - bookInfo.viewSize.Width
             if (limitMax < max) max = limitMax
             mLastFlingX = 0
-            if (initialVelocity < 0 && max < 0) { //페이지 이동 우측
+
+            val flingThreshold = 800
+
+            if (initialVelocity < -flingThreshold && max <= 0) { // 페이지 이동 우측 (다음 페이지)
                 startUsingDistance(-(bookInfo.viewSize.Width + max + mSpacing))
                 return true
-            } else if (initialVelocity > 0 && min > 0) { //페이지 이동 우측
+            } else if (initialVelocity > flingThreshold && min >= 0) { // 페이지 이동 좌측 (이전 페이지)
                 startUsingDistance(bookInfo.viewSize.Width - min + mSpacing)
                 return true
             }
+
             mScroller.fling(0, 0, -initialVelocity, 0, min, max, 0, 0)
-            mScroller.extendDuration(mAnimationDuration)
-            post(this)
+//            mScroller.extendDuration(mAnimationDuration)
+            postOnAnimation(this)
             return true
         }
 
@@ -610,7 +566,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             startCommon()
             mLastFlingX = 0
             mScroller.startScroll(0, 0, -distance, 0, mAnimationDuration)
-            post(this)
+            postOnAnimation(this)
         }
 
         fun stop(scrollIntoSlots: Boolean) {
@@ -641,7 +597,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             }
             if (more) {
                 mLastFlingX = x
-                post(this)
+                postOnAnimation(this)
             } else {
                 endFling(true)
             }
@@ -725,10 +681,66 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         return true
     }
 
-    //-------------------------------------------- DEBUG Code  ------------------------------------------
-    fun debugLogViews(tag:String = "") {
-        linkedViews.forEach { page ->
-            CLog.e("KDS3393_TEST_Log $tag = $page")
+    private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            mIsScaling = true
+            mOldWidth = getCenterPage().width
+            mOldHeight = getCenterPage().height
+            mOldLeft = getCenterPage().left
+            return true
+        }
+
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            if (mOldHeight == 0 || mOldWidth == 0) return false
+
+            // 누적 비율(scaleFactor)을 이전 크기에 곱하여 새 크기 계산
+            val scaleFactor = detector.scaleFactor
+            var height = (mOldHeight * scaleFactor).toInt()
+
+            // 최대 확대 제한
+            if (height > bookInfo.viewSize.Height) return true
+
+            var scale = height.toFloat() / mOldHeight.toFloat()
+            var width = (mOldWidth * scale).toInt()
+
+            // 최소 축소 제한 (화면 너비보다 작아지지 않도록)
+            if (width < bookInfo.viewSize.Width) {
+                scale = bookInfo.viewSize.Width.toFloat() / mOldWidth.toFloat()
+                width = bookInfo.viewSize.Width
+                height = (mOldHeight * scale).toInt()
+            }
+
+            // 포커스 X 좌표를 기준으로 확대 중심점 설정 (자연스러운 줌 처리)
+            val diffWidth = width - mOldWidth
+            val focusRatio = if (mOldWidth > 0) (detector.focusX - mOldLeft) / mOldWidth else 0.5f
+            var left = (mOldLeft - (diffWidth * focusRatio)).toInt()
+
+            // 좌우 여백 보정
+            if (left > 0) left = 0
+            var right = left + width
+            if (right < bookInfo.viewSize.Width) {
+                right = bookInfo.viewSize.Width
+                left = right - width
+            }
+
+            // 상하 중앙 정렬
+            var topMargin = (bookInfo.viewSize.Height - height) / 2
+            if (topMargin < 0) topMargin = 0
+
+            getCenterPage().layout(left, topMargin, right, topMargin + height)
+            invalidate()
+            setZoomType(ZOOM_USER_CUSTOM, height)
+
+            // 다음 이벤트를 위해 현재 상태 갱신
+            mOldWidth = width
+            mOldHeight = height
+            mOldLeft = left
+
+            return true
+        }
+
+        override fun onScaleEnd(detector: ScaleGestureDetector) {
+            mIsScaling = false
         }
     }
 }

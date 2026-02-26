@@ -2,23 +2,23 @@ package com.kds3393.just.justviewer2.image
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.view.View
+import android.graphics.drawable.Drawable
 import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.resource.bitmap.Downsampler
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.kds3393.just.justviewer2.R
 import com.kds3393.just.justviewer2.utils.glide.ZipData
-import com.kds3393.just.justviewer2.utils.glide.ZipImageLoader
+import common.lib.base.ActBaseLib
 import common.lib.base.launchMain
 import common.lib.debug.CLog
 import common.lib.utils.LayoutUtils
 import common.lib.utils.Size
-import androidx.core.view.isVisible
-import androidx.core.view.isGone
 
 fun pageViewMaker(context: Context, parentView: ViewGroup, viewId: Int): PageView {
     val view = PageView(context)
@@ -47,6 +47,7 @@ class PageView(context: Context) : AppCompatImageView(context) {
         if (this.imageWidth == 0 && this.imageHeight == 0) {
             return
         }
+
         if (zoomType == ZOOM_FIT_HEIGHT) {
             setZoomFitHeight()
         } else if (zoomType == ZOOM_FIT_SCREEN) {
@@ -55,6 +56,9 @@ class PageView(context: Context) : AppCompatImageView(context) {
             setZoomHalfScreen()
         } else {
             if (zoomStandardHeight > 0) {
+                // 0으로 나누기(Divide by Zero) 방어 코드 추가
+                if (layoutHeight == 0) return
+
                 val scale: Float = zoomStandardHeight.toFloat() / layoutHeight.toFloat()
                 layoutWidth = (layoutWidth.toFloat() * scale).toInt()
                 layoutHeight = zoomStandardHeight
@@ -62,6 +66,7 @@ class PageView(context: Context) : AppCompatImageView(context) {
                 if (topMargin < 0) {
                     topMargin = 0
                 }
+
                 LayoutUtils.setFrameLayoutParams(this, layoutWidth, layoutHeight, 0, topMargin)
             } else {
                 setZoomFitScreen()
@@ -72,8 +77,6 @@ class PageView(context: Context) : AppCompatImageView(context) {
     override fun layout(l: Int, t: Int, r: Int, b: Int) {
         if (pageIndex >= 0) {
             super.layout(l, t, r, b)
-            layoutParams.width = r - l
-            layoutParams.height = b - t
         }
 //        CLog.e("KDS3393_TEST_pageview viewId[$viewId] pageIndex[$pageIndex] layout [$l,$t,$r,$b]")
     }
@@ -137,36 +140,70 @@ class PageView(context: Context) : AppCompatImageView(context) {
 
     private var imageZipData : ZipData? = null
     private var onLoadingComplete:(() -> Unit)? = null
-    fun loadImage(zipData: ZipData, onLoadingComplete:(() -> Unit)? = null) {
-        if (imageZipData == zipData) {  //동일한 이미지 entry이면 로딩하지 않는다.
+    private var glideTarget: CustomTarget<Bitmap>? = null
+
+    fun clearImage() {
+        glideTarget?.let { target ->
+            val act = ActBaseLib.unwrap(context)
+            if (!act.isDestroyed && !act.isFinishing) {
+                Glide.with(context).clear(target)
+            }
+            glideTarget = null
+        }
+        setImageDrawable(null)
+        imageZipData = null
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        clearImage()
+    }
+
+    fun loadImage(zipData: ZipData, onLoadingComplete: (() -> Unit)? = null) {
+        if (imageZipData == zipData) {
             CLog.e("KDS3393_TEST_loadImage pageIndex[$pageIndex] SAME return")
             return
         }
+
+        // 새로운 이미지를 로드하기 전에 기존 리소스 완전 해제
+        clearImage()
+
+        this.imageZipData = zipData
         this.onLoadingComplete = onLoadingComplete
+
+        // RequestListener 대신 CustomTarget 사용
+        glideTarget = object : CustomTarget<Bitmap>() {
+            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                launchMain {
+                    val imageScale: Float = getScale(resource)
+                    setLayout((resource.width * imageScale).toInt(), (resource.height * imageScale).toInt())
+                    setImageBitmap(resource)
+                    this@PageView.onLoadingComplete?.invoke()
+                }
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {
+                setImageDrawable(placeholder)
+            }
+
+            override fun onLoadFailed(errorDrawable: Drawable?) {
+                // 필요시 에러 이미지 처리
+                setImageDrawable(errorDrawable)
+            }
+        }
+
         Glide.with(context).asBitmap()
-            .override(parentViewSize.Width*2,parentViewSize.Height)
+            .set(Downsampler.ALLOW_HARDWARE_CONFIG, true)
+            .format(DecodeFormat.PREFER_RGB_565)
+            .override(parentViewSize.Width * 2, parentViewSize.Height)
             .placeholder(R.drawable.file)
             .load(zipData)
-            .addListener(object : RequestListener<Bitmap> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Bitmap>, isFirstResource: Boolean): Boolean {
-                    return true
-                }
-
-                override fun onResourceReady(resource: Bitmap, model: Any, target: Target<Bitmap>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                    launchMain {
-                        val imageScale: Float = getScale(resource)
-                        setLayout((resource.width * imageScale).toInt(), (resource.height * imageScale).toInt())
-                        setImageBitmap(resource)
-                        onLoadingComplete?.invoke()
-                    }
-                    return true
-                }
-            }).submit()
+            .into(glideTarget!!) // submit() 대신 into(Target) 사용
     }
 
     override fun toString(): String {
         val size = "{${left},${top}-${right},${bottom}},{${width},${height}}"
-        val zipName = imageZipData?.entry?.name
+        val zipName = imageZipData?.entry?.fileName
         val showType = if (isVisible) {
             "show"
         } else if (isGone) {
@@ -175,18 +212,5 @@ class PageView(context: Context) : AppCompatImageView(context) {
             "hide"
         }
         return "PageView[$viewId] mPageIndex[$pageIndex] size[$size] zipName[$zipName] $showType"
-    }
-
-    companion object {
-        fun getZoomTypeStr(type:Int) : String {
-            return when(type) {
-                ZOOM_HALF_SCREEN -> "ZOOM_HALF_SCREEN"
-                ZOOM_FIT_HEIGHT -> "ZOOM_FIT_HEIGHT"
-                ZOOM_FIT_SCREEN -> "ZOOM_FIT_SCREEN"
-                ZOOM_USER_CUSTOM -> "ZOOM_USER_CUSTOM"
-                ZOOM_NONE -> "ZOOM_NONE"
-                else -> type.toString()
-            }
-        }
     }
 }

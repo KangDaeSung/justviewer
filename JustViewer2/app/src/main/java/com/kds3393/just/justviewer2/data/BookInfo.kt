@@ -8,9 +8,9 @@ import common.lib.base.CoroutineTask
 import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import common.lib.utils.Size
-import org.apache.tools.zip.ZipEntry
-import org.apache.tools.zip.ZipFile
-import java.io.IOException
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
+import java.nio.charset.Charset
 import java.util.Collections
 
 /**
@@ -20,17 +20,17 @@ import java.util.Collections
 data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
     var id: Long = 0        //DB id
     var viewSize = Size()
-    var entryArray = ArrayList<ZipEntry>()  //Zip file 내부의 image file entry
+    var entryArray = ArrayList<FileHeader>()  //Zip file 내부의 image file entry
         private set
     var currentPage = 0     //현재 페이지 number
     var zoomType = ZOOM_FIT_SCREEN       //맞춤 zoom 형태    //TODO 정상 동작 하는지 확인 필요
     //비슷한 이름의 zip 파일 리스트
     var books:ArrayList<String> = ArrayList<String>()
-            set(list) {
-                field.clear()
-                field.addAll(list)
-                setTarget(targetPath)
-            }
+        set(list) {
+            field.clear()
+            field.addAll(list)
+            setTarget(targetPath)
+        }
     /**
      * ImageViewer : custom zoom인 경우 기준 height
      * TODO 나중에 Textviewer랑 변수 분리하자
@@ -114,26 +114,28 @@ data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
                 if (params != null) {
                     try {
                         CLog.e("KDS3393_TEST_ZIP targetPath = $targetPath")
-                        val zFile = ZipFile(targetPath, "EUC-KR")
-                        val zipEntries = zFile.entries
+                        val zFile = ZipFile(targetPath)
+                        zFile.setCharset(Charset.forName("EUC-KR"))
+                        val fileHeaders = zFile.fileHeaders
+
                         entryArray.clear()
-                        while (zipEntries.hasMoreElements()) {
-                            val entry = zipEntries.nextElement() as ZipEntry
-                            val extension = FileUtils.getExtension(entry.name)
+                        for (header in fileHeaders) {
+                            if (header.isDirectory) continue
+
+                            val extension = FileUtils.getExtension(header.fileName)
                             if (extension.equals("jpg", ignoreCase = true) ||
                                 extension.equals("jpeg", ignoreCase = true) ||
                                 extension.equals("png", ignoreCase = true) ||
                                 extension.equals("bmp", ignoreCase = true) ||
                                 extension.equals("webp", ignoreCase = true) ||
                                 extension.equals("gif", ignoreCase = true)) {
-                                entryArray.add(entry)
+                                entryArray.add(header)
                             }
                         }
                         CLog.e("KDS3393_TEST_Zip Loaded Size[${entryArray.size}]")
-                        zFile.close()
                         Collections.sort(entryArray, SubStringComparator(com.kds3393.just.justviewer2.config.SettingImageViewer.getIsPageRight(com.kds3393.just.justviewer2.CApp.get())))
-                    } catch (e: IOException) {
-                        CToast.normal("압출파일을 푸는 도중 오류가 발생하였습니다.")
+                    } catch (e: Exception) {
+                        CToast.normal("압축파일을 푸는 도중 오류가 발생하였습니다.")
                         CLog.e(e)
                     }
 

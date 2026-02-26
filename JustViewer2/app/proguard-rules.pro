@@ -50,8 +50,6 @@
 
 #--------------------------- Library dependency ----------------------------------------
 #[[OkHttp
--keep class okhttp3.** { *; }
-
 -keep interface okhttp3.** { *; }
 
 -dontwarn okhttp3.**
@@ -67,3 +65,6 @@
      <init>(...);
 }
 #]]BaseRecyclerViewAdapterHelper
+
+-keep class org.apache.tools.zip.** { *; }
+-dontwarn org.apache.tools.zip.**

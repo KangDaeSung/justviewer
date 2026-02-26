@@ -12,14 +12,15 @@ import com.bumptech.glide.load.model.ModelLoaderFactory
 import com.bumptech.glide.load.model.MultiModelLoaderFactory
 import com.bumptech.glide.signature.ObjectKey
 import common.lib.debug.CLog
-import org.apache.tools.zip.ZipEntry
-import org.apache.tools.zip.ZipFile
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
+import java.nio.charset.Charset
 
-data class ZipData(val path:String, val entry:ZipEntry, val width:Int = -1, val height:Int = -1)
+data class ZipData(val path:String, val entry:FileHeader, val width:Int = -1, val height:Int = -1)
 
 class ZipImageLoader : ModelLoader<ZipData, Bitmap> {
     override fun buildLoadData(model: ZipData, width: Int, height: Int, options: Options): LoadData<Bitmap> {
-        val key = "code:${model.path};entry:${model.entry.name}"
+        val key = "code:${model.path};entry:${model.entry.fileName}"
         return LoadData(ObjectKey(key), ZipDataFetcher(model))
     }
 
@@ -60,22 +61,25 @@ class ZipDataFetcher(private val model: ZipData) : DataFetcher<Bitmap> {
             val bitmap = BitmapFactory.decodeByteArray(buffer, 0, buffer.size, option)
             callback.onDataReady(bitmap)
         } else {
-            callback.onLoadFailed(IllegalArgumentException("ZipImage Load failed ${model.entry.name}"))
+            callback.onLoadFailed(IllegalArgumentException("ZipImage Load failed ${model.entry.fileName}"))
         }
     }
 
     private fun unzipTargetBuffer(zipData: ZipData): ByteArray? {
         try {
             val buffer = ByteArray(1024)
-            val imageBuffer = ByteArray(zipData.entry.size.toInt())
+            val imageBuffer = ByteArray(zipData.entry.uncompressedSize.toInt())
             var total = 0
-            val zFile = ZipFile(zipData.path, "EUC-KR")
-            val newEntry = zFile.getEntry(zipData.entry.name)
-            val zio = zFile.getInputStream(newEntry)
+            val zFile = ZipFile(zipData.path)
+            zFile.setCharset(Charset.forName("EUC-KR"))
+            val zio = zFile.getInputStream(zipData.entry)
 
             var len : Int
             while (zio.read(buffer).also { len = it } != -1) {
-                if (isCancelled) return null
+                if (isCancelled) {
+                    zio.close()
+                    return null
+                }
                 System.arraycopy(buffer, 0, imageBuffer, total, len)
                 total += len
             }

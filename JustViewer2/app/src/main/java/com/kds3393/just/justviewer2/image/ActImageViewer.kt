@@ -116,17 +116,19 @@ class ActImageViewer : ActBase() {
         bindService(intent, mConnection, BIND_AUTO_CREATE)
     }
 
-    override fun onBackPressed() {
+    override fun onFinish(): Boolean {
         if (binding.layoutMoveEdit.isMoveButtonEditMode) {
             binding.layoutMoveEdit.cancelEditMode()
             isShowSlider = true
+            return false
         } else if (binding.imageMusicPanel.isShow) {
             binding.imageMusicPanel.setSwitchMusicPanel(false)
+            return false
         } else if (binding.layoutNavi.isShow()) {
             setHideNaviBar()
-        } else {
-            super.onBackPressed()
+            return false
         }
+        return true
     }
 
     private fun createMainView() {
@@ -193,6 +195,7 @@ class ActImageViewer : ActBase() {
             }
 
             override fun onLoaded(pageSize: Int) {
+                if (isFinishing || isDestroyed) return
                 sliderMax = pageSize.toFloat()
             }
         })

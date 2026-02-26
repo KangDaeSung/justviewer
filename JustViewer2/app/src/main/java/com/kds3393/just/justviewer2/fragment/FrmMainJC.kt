@@ -73,12 +73,14 @@ import com.kds3393.just.justviewer2.music.player.MusicService
 import com.kds3393.just.justviewer2.utils.ACTION
 import com.kds3393.just.justviewer2.utils.Event
 import com.kds3393.just.justviewer2.utils.SubStringComparator
+import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import common.lib.utils.SharedBus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Collections
+import java.util.Locale
 
 class FrmMainJC : FrmBase() {
     val driveListState = ListViewModel<FileData>()
@@ -233,10 +235,9 @@ class FrmMainJC : FrmBase() {
         }).show()
     }
 
+    private var showDeleteConfirm by mutableStateOf(false)
     @Composable
     fun MainScreen() {
-        var showDeleteConfirm by remember { mutableStateOf(false) }
-
         BackHandler(enabled = isCheckMode) {
             setEditMode(false)
         }
@@ -401,7 +402,7 @@ class FrmMainJC : FrmBase() {
                                 if (file.isDirectory) {
                                     (activity as? ActMain)?.newFileList(item)
                                 } else {
-                                    (activity as? ActBase)?.startViewer(file, null)
+                                    FileManager.startViewer(activity as ActBase, file, null)
                                 }
                             } else {
                                 showDeleteDialog(item)
@@ -484,8 +485,9 @@ class FrmMainJC : FrmBase() {
                     val totalSize = stat.blockCountLong.toFloat() * stat.blockSizeLong.toFloat() / 1024 / 1024 / 1024
                     val freeSize = stat.freeBlocksLong * stat.blockSizeLong.toFloat() / 1024 / 1024 / 1024
                     val usedSize = totalSize - freeSize
-                    sizeText = String.format("%.2fGB / %.2fGB", usedSize, totalSize)
+                    sizeText = String.format(Locale.getDefault(), "%.2fGB / %.2fGB", usedSize, totalSize)
                 } catch (e: Exception) {
+                    CLog.e(e)
                     sizeText = "Unknown"
                 }
             }
