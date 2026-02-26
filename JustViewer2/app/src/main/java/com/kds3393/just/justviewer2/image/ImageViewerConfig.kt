@@ -3,10 +3,10 @@ package com.kds3393.just.justviewer2.image
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
-import com.kds3393.just.justviewer2.data.BookInfo
+import com.kds3393.just.justviewer2.data.BookmarkData
 
 open class ImageViewerConfig @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : FrameLayout(context,attrs) {
-    lateinit var bookInfo: BookInfo
+    lateinit var bookInfo: BookmarkData
     protected var mSpacing = 10
     protected var movePageHThreshold = 0
     protected var mAnimationDuration = 300

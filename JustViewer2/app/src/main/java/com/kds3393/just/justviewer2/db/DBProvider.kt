@@ -9,48 +9,44 @@ import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import android.database.sqlite.SQLiteStatement
 import common.lib.debug.CLog
+import androidx.core.database.sqlite.transaction
 
-class DBProvider(context: Context?, path: String?, factory: CursorFactory?, version: Int) {
+class DBProvider(context: Context?, path: String?) {
     val db: SQLiteDatabase
-    var dbHelper: DBHelper
+    var dbHelper: DBHelper = DBHelper(context, path + "/" + DBInfo.DB_NAME, null, DBInfo.DATABASE_VERSION)
+
     init {
-        dbHelper = DBHelper(context, path + "/" + DBInfo.DB_NAME, null, DBInfo.DATABASE_VERSION)
         db = dbHelper.writableDatabase
     }
 
-    inner class DBHelper internal constructor(context: Context?, name: String?, factory: CursorFactory?, version: Int) : SQLiteOpenHelper(context, name, factory, version) {
+    class DBHelper internal constructor(context: Context?, name: String?, factory: CursorFactory?, version: Int) : SQLiteOpenHelper(context, name, factory, version) {
         override fun onCreate(db: SQLiteDatabase) {
-            CLog.e("KDS3393_TEST_DB_onCreate")
-            db.beginTransaction()
-            try {
-                db.execSQL(DBInfo.TEXT_BOOKMARK_TABLE_CREATE)
-                db.execSQL(DBInfo.FAVO_BOOKMARK_TABLE_CREATE)
-                db.execSQL(DBInfo.IMAGE_BOOKMARK_TABLE_CREATE)
-                db.setTransactionSuccessful()
-            } catch (e: SQLiteException) {
-                CLog.e(e)
-            } finally {
-                db.endTransaction()
+            db.transaction {
+                try {
+                    // 통합된 테이블 생성
+                    execSQL(DBInfo.BOOKMARK_TABLE_CREATE)
+                    execSQL(DBInfo.FAVO_BOOKMARK_TABLE_CREATE)
+                } catch (e: SQLiteException) {
+                    CLog.e(e)
+                } finally {
+                }
             }
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             db.execSQL("DROP TABLE IF EXISTS " + DBInfo.FAVO_BOOKMARK_TABLE)
-            db.execSQL("DROP TABLE IF EXISTS " + DBInfo.IMAGE_BOOKMARK_TABLE)
-            db.execSQL("DROP TABLE IF EXISTS " + DBInfo.TEXT_BOOKMARK_TABLE)
+            db.execSQL("DROP TABLE IF EXISTS image_bookmark_table") // 구형 테이블
+            db.execSQL("DROP TABLE IF EXISTS txt_bookmark_table")   // 구형 테이블
+            db.execSQL("DROP TABLE IF EXISTS " + DBInfo.BOOKMARK_TABLE)
             onCreate(db)
         }
     }
 
     val isOpened: Boolean
-        get() = if (db == null) {
-            false
-        } else db.isOpen
+        get() = db.isOpen
 
     fun close() {
-        if (db != null) {
-            db.close()
-        }
+        db.close()
     }
 
     /**
@@ -106,6 +102,7 @@ class DBProvider(context: Context?, path: String?, factory: CursorFactory?, vers
      * @param strWhere
      * @return
      */
+    @Suppress("unused")
     fun getDBData(strTable: String, strSelect: Array<String?>?, strWhere: String?): Cursor? {
         return if (isOpened) {
             db.query(strTable, strSelect, strWhere, null, null, null, null)
@@ -119,6 +116,7 @@ class DBProvider(context: Context?, path: String?, factory: CursorFactory?, vers
      * @param strWhere
      * @return
      */
+    @Suppress("unused")
     fun getDBData(strTable: String, strSelect: Array<String?>?, strWhere: String?, orderby: String?): Cursor? {
         return if (isOpened) {
             db.query(strTable, strSelect, strWhere, null, null, null, orderby)
@@ -141,6 +139,7 @@ class DBProvider(context: Context?, path: String?, factory: CursorFactory?, vers
      * @param strQuery
      * @return
      */
+    @Suppress("unused")
     fun execSQL(strQuery: String?) {
         if (isOpened) {
             db.execSQL(strQuery)
@@ -153,72 +152,73 @@ class DBProvider(context: Context?, path: String?, factory: CursorFactory?, vers
      * 검사할 테이블 명
      * @return 존재여부 (true : 존재, false : 존재하지 않음)
      */
+    @Suppress("unused")
     fun isExistTable(strTableName: String): Boolean {
         if (isOpened) {
             var bRet = false
             val temp = "SELECT name FROM sqlite_master WHERE name='$strTableName'"
             val cursor = db.rawQuery(temp, null)
-            if (cursor != null) {
-                if (cursor.count > 0) {
-                    bRet = true
-                }
-                cursor.close()
+            if (cursor.count > 0) {
+                bRet = true
             }
+            cursor.close()
             return bRet
         }
         return false
     }
 
+    @Suppress("unused")
     fun isExistData(strTableName: String, idFieldName: String, id: Int): Boolean {
         if (isOpened) {
             var bRet = false
             val temp = "SELECT * FROM $strTableName WHERE $idFieldName='$id'"
             val cursor = db.rawQuery(temp, null)
-            if (cursor != null) {
-                if (cursor.count > 0) {
-                    bRet = true
-                }
-                cursor.close()
+            if (cursor.count > 0) {
+                bRet = true
             }
+            cursor.close()
             return bRet
         }
         return false
     }
 
+    @Suppress("unused")
     fun isExistData(strTableName: String, idFieldName: String, id: Int, userfieldName: String, userid: String): Boolean {
         if (isOpened) {
             var bRet = false
             val temp = "SELECT * FROM $strTableName WHERE $idFieldName='$id' AND $userfieldName='$userid'"
             val cursor = db.rawQuery(temp, null)
-            if (cursor != null) {
-                if (cursor.count > 0) {
-                    bRet = true
-                }
-                cursor.close()
+            if (cursor.count > 0) {
+                bRet = true
             }
+            cursor.close()
             return bRet
         }
         return false
     }
 
+    @Suppress("unused")
     fun startTransaction() {
         if (isOpened) {
             db.beginTransaction()
         }
     }
 
+    @Suppress("unused")
     fun transactionSuccess() {
         if (isOpened) {
             db.setTransactionSuccessful()
         }
     }
 
+    @Suppress("unused")
     fun endTransaction() {
         if (isOpened) {
             db.endTransaction()
         }
     }
 
+    @Suppress("unused")
     fun compileStatement(sql: String?): SQLiteStatement {
         return db.compileStatement(sql)
     }

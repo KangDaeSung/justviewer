@@ -76,12 +76,13 @@ import androidx.compose.ui.unit.dp
 import com.kds3393.just.justviewer2.activity.ActBase
 import com.kds3393.just.justviewer2.activity.ActMain
 import com.kds3393.just.justviewer2.compose.CText
-import com.kds3393.just.justviewer2.data.TextItemData
 import com.kds3393.just.justviewer2.db.DBMgr
 import com.kds3393.just.justviewer2.utils.SharePref
 import com.kds3393.just.justviewer2.compose.ListViewModel
 import com.kds3393.just.justviewer2.compose.MapViewModel
 import com.kds3393.just.justviewer2.compose.dp2sp
+import com.kds3393.just.justviewer2.data.BOOKMARK_TYPE_TEXT
+import com.kds3393.just.justviewer2.data.BookmarkData
 import common.lib.base.getFileName
 import common.lib.base.launchIO
 import common.lib.base.launchMain
@@ -104,12 +105,11 @@ import java.nio.file.Paths
 import kotlin.math.roundToInt
 
 class ActTextViewerJC : ActBase() {
-    private lateinit var textData: TextItemData
+    private lateinit var textData: BookmarkData
 
     private val filePathList = ListViewModel<String>()  //관련 컨텐츠 파일 리스트
     private var contentPath by mutableStateOf("")   //현재 Viewer의 파일 경로
     private val textListState = ListViewModel<String>()     //컨텐츠의 Text
-    private var hideLine by mutableIntStateOf(-1)       //숨긴 Text Index
 
     private val searchResultMap = MapViewModel<Int,ArrayList<MatchResult>>()   //검색 결과
     private var searchResultKeys : List<Int>? = null   //검색 내용으로 이동하기 위한 position 저장 배열
@@ -134,11 +134,11 @@ class ActTextViewerJC : ActBase() {
             return
         }
 
-        textData = DBMgr.instance.bookmarkLoad(contentPath)?:TextItemData(contentPath, 0)
-        if (textData.mId < 0) {
-            textData.mId = DBMgr.instance.insertTextData(textData)
+        textData = DBMgr.instance.loadBookmark(contentPath,BOOKMARK_TYPE_TEXT)?: BookmarkData(targetPath = contentPath, bookType = BOOKMARK_TYPE_TEXT)
+        if (textData.id < 0) {
+            textData.id = DBMgr.instance.insertBookmark(textData)
         } else {
-            firstIndex = textData.mPageNum
+            firstIndex = textData.currentPage
         }
 
         setContent {
@@ -158,8 +158,8 @@ class ActTextViewerJC : ActBase() {
 
     override fun onPause() {
         super.onPause()
-        textData.mPageNum = firstVisibleItemIndex
-        DBMgr.instance.updateTextData(textData)
+        textData.currentPage = firstVisibleItemIndex
+        DBMgr.instance.updateBookmark(textData)
     }
 
     override fun onFinish(): Boolean {
@@ -576,19 +576,10 @@ class ActTextViewerJC : ActBase() {
             if (file.exists() && file.isFile && file.canRead()) {
                 try {
                     textListState.clearList()
-                    var count = 0
-                    if (hideLine > 0) {
-                        textListState.add("● ● ●")
-                    }
-
                     if (charset != null) {
                         //SDK 26이상 지원
                         Files.lines(Paths.get(contentPath),charset).use { stream -> stream.forEach { line ->
-                            if (hideLine > count) {
-                                count++
-                            } else {
-                                textListState.add(line.replace("&nbsp;", ""))
-                            }
+                            textListState.add(line.replace("&nbsp;", ""))
                         }}
                     } else {
                         FileInputStream(contentPath).use { fis ->
@@ -627,7 +618,7 @@ class ActTextViewerJC : ActBase() {
     }
 
     //key : 검색할 키워드
-    private suspend fun search(key:String) : Int {
+    private fun search(key:String) : Int {
         runBlocking {
             val job = launch {
                 CLog.e("KDS3393_TEST_search START key = $key")

@@ -10,40 +10,52 @@ import common.lib.utils.FileUtils
 import common.lib.utils.Size
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
+import java.io.Serializable
 import java.nio.charset.Charset
 import java.util.Collections
 
+const val BOOKMARK_TYPE_IMAGE = 0
+const val BOOKMARK_TYPE_TEXT = 1
 /**
- * @param targetPath : zip 파일의 path
- * @param isLeft : 페이지 진행 방향 : ImageViewer : 1 - left, 0 - right //MoviePlayer : 1 - portrait, 0 - landscape
+ * @param targetPath : 파일의 경로
+ * @param bookType : 뷰어 타입 (DBInfo.TYPE_IMAGE 또는 DBInfo.TYPE_TEXT)
+ * @param isLeft : 페이지 진행 방향 (1 - left, 0 - right)
  */
-data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
-    var id: Long = 0        //DB id
+data class BookmarkData(
+    var targetPath: String,
+    var bookType: Int = BOOKMARK_TYPE_IMAGE,
+    var isLeft: Int = 0
+) : Serializable {
+
+    // 공통 필드
+    var id: Long = -1L
+    var currentPage = 0
+
+    // ---------------- ImageViewer 전용 필드 ----------------
     var viewSize = Size()
-    var entryArray = ArrayList<FileHeader>()  //Zip file 내부의 image file entry
+    var entryArray = ArrayList<FileHeader>()
         private set
-    var currentPage = 0     //현재 페이지 number
-    var zoomType = ZOOM_FIT_SCREEN       //맞춤 zoom 형태    //TODO 정상 동작 하는지 확인 필요
-    //비슷한 이름의 zip 파일 리스트
-    var books:ArrayList<String> = ArrayList<String>()
+    var zoomType = ZOOM_FIT_SCREEN
+    var zoomStandardHeight = 0
+    var books = ArrayList<String>()
         set(list) {
             field.clear()
             field.addAll(list)
             setTarget(targetPath)
         }
-    /**
-     * ImageViewer : custom zoom인 경우 기준 height
-     * TODO 나중에 Textviewer랑 변수 분리하자
-     */
-    var zoomStandardHeight = 0
-    var bookIndex = 0       /** @params books 의 index */
+    var bookIndex = 0
+    var isBookChanging = false
+        private set
+
+    // ---------------- TextViewer 전용 필드 ----------------
+    var hideLine = 0
 
     override fun toString(): String {
-        return "BookInfo:id[$id] currentPage[$currentPage] bookIndex[$bookIndex] zoomType[$zoomType] zoomStandardHeight[$zoomStandardHeight]\n$targetPath"
+        return "BookmarkData: id[$id] type[$bookType] page[$currentPage] bookIndex[$bookIndex] zoomType[$zoomType] hideLine[$hideLine]\n$targetPath"
     }
 
-    /** targetPath를 설정하고 targetPath에 해당하는 bookIndex를 셋팅 */
-    private fun setTarget(path:String) {
+    // ---------------- 공통 및 이미지 뷰어 로직 ----------------
+    private fun setTarget(path: String) {
         targetPath = path
         books.forEachIndexed { index, bookPath ->
             if (targetPath == bookPath) {
@@ -53,36 +65,19 @@ data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
         }
     }
 
-    /**
-     * 파일 삭제시 해당 targetPath를 다음이나 이전 book으로 setting한다.
-     * @return 변경할 targetPath가 없으면 false 이때 imageviewer를 종료해준다.
-     */
-    fun removeCurrentBook() : Boolean {
+    fun removeCurrentBook(): Boolean {
         books.remove(targetPath)
-        if (books.isEmpty()) {
-            return false
-        }
+        if (books.isEmpty()) return false
+
         val path = if (books.size > bookIndex) books[bookIndex] else books.last()
         setTarget(path)
         return true
     }
 
-    fun isNextBook(): Boolean {
-        if (books.isEmpty()) return false
-        return books.size - 1 > bookIndex
-    }
-
-    fun isPrevBook(): Boolean {
-        return bookIndex > 0
-    }
-
-    fun isNext(): Boolean {
-        return entryArray.size - 1 > currentPage
-    }
-
-    fun isPrev(): Boolean {
-        return currentPage > 0
-    }
+    fun isNextBook(): Boolean = books.isNotEmpty() && books.size - 1 > bookIndex
+    fun isPrevBook(): Boolean = bookIndex > 0
+    fun isNext(): Boolean = entryArray.size - 1 > currentPage
+    fun isPrev(): Boolean = currentPage > 0
 
     fun setNextBook(): Boolean {
         bookIndex++
@@ -104,13 +99,18 @@ data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
         }
     }
 
-    var isBookChanging = false
-        private set
-    fun loadBook(onPostExecute:(() -> Unit)? = null) {
+    fun loadBook(onPostExecute: (() -> Unit)? = null) {
+        // 텍스트 뷰어일 경우 압축 해제 로직을 건너뜁니다.
+        if (bookType == BOOKMARK_TYPE_TEXT) {
+            onPostExecute?.invoke()
+            return
+        }
+
         CoroutineTask(
             onPreExecute = {
                 isBookChanging = true
-            }, doInBackground = { params ->
+            },
+            doInBackground = { params ->
                 if (params != null) {
                     try {
                         CLog.e("KDS3393_TEST_ZIP targetPath = $targetPath")
@@ -123,12 +123,7 @@ data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
                             if (header.isDirectory) continue
 
                             val extension = FileUtils.getExtension(header.fileName)
-                            if (extension.equals("jpg", ignoreCase = true) ||
-                                extension.equals("jpeg", ignoreCase = true) ||
-                                extension.equals("png", ignoreCase = true) ||
-                                extension.equals("bmp", ignoreCase = true) ||
-                                extension.equals("webp", ignoreCase = true) ||
-                                extension.equals("gif", ignoreCase = true)) {
+                            if (listOf("jpg", "jpeg", "png", "bmp", "webp", "gif").contains(extension.lowercase())) {
                                 entryArray.add(header)
                             }
                         }
@@ -139,26 +134,33 @@ data class BookInfo(var targetPath: String, var isLeft:Int = 0) {
                         CLog.e(e)
                     }
 
-                    //initConfig
-                    val book = DBMgr.instance.imageDataLoad(targetPath)
+                    // 통합 DB에서 데이터 조회 (수정됨)
+                    val book = DBMgr.instance.loadBookmark(targetPath, BOOKMARK_TYPE_TEXT)
                     if (book == null) {
                         var isLeftView = 1
-
                         if (!com.kds3393.just.justviewer2.config.SettingImageViewer.getIsPageRight(com.kds3393.just.justviewer2.CApp.get())) isLeftView = 0
-                        this@BookInfo.currentPage = 0
-                        this@BookInfo.isLeft = isLeftView
-                        DBMgr.instance.insertImageData(this@BookInfo)
+
+                        this@BookmarkData.currentPage = 0
+                        this@BookmarkData.isLeft = isLeftView
+                        this@BookmarkData.bookType = BOOKMARK_TYPE_TEXT
+
+                        // DB 데이터 삽입 (수정됨)
+                        DBMgr.instance.insertBookmark(this@BookmarkData)
                     } else {
-                        this@BookInfo.id = book.id
-                        this@BookInfo.currentPage = book.currentPage
-                        this@BookInfo.isLeft = book.isLeft
-                        this@BookInfo.zoomType = book.zoomType
-                        this@BookInfo.zoomStandardHeight = book.zoomStandardHeight
+                        // DB에 데이터가 존재하면 기존 데이터 로드
+                        this@BookmarkData.id = book.id
+                        this@BookmarkData.currentPage = book.currentPage
+                        this@BookmarkData.isLeft = book.isLeft
+                        this@BookmarkData.zoomType = book.zoomType
+                        this@BookmarkData.zoomStandardHeight = book.zoomStandardHeight
+                        this@BookmarkData.hideLine = book.hideLine
                     }
                 }
-            }, onPostExecute = {
+            },
+            onPostExecute = {
                 onPostExecute?.invoke()
                 isBookChanging = false
-            }).execute()
+            }
+        ).execute()
     }
 }

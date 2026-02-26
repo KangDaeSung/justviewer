@@ -1,12 +1,12 @@
 package com.kds3393.just.justviewer2.utils
 
+import com.kds3393.just.justviewer2.data.BookmarkData
 import com.kds3393.just.justviewer2.music.Mp3Id3Data
 import com.kds3393.just.justviewer2.music.PlayerManager
 
 enum class ACTION {
     //Music
     MUSIC_STATE_CHANGE,         //음악 상태 변경 STATE_IDLE(1), STATE_BUFFERING(2), STATE_READY(3), STATE_ENDED(4)
-    NONE
 }
 
 object Event {
@@ -24,20 +24,22 @@ object Event {
                 var musicPathList:ArrayList<String>? = null,
                 var player: PlayerManager? = null,
                 var musicInfo: Mp3Id3Data? = null) {
-        fun logStateToString() : String {
-            return when(state) {
-                1 -> "STATE_IDLE"
-                2 -> "STATE_BUFFERING"
-                3 -> "STATE_READY"
-                4 -> "STATE_ENDED"
-                10001 -> "MUSIC_STATE_PLAY"
-                10002 -> "MUSIC_STATE_PAUSE"
-                10003 -> "MUSIC_STATE_END"
-                else -> "UNKNOWN"
-            }
-        }
+//        fun logStateToString() : String {
+//            return when(state) {
+//                1 -> "STATE_IDLE"
+//                2 -> "STATE_BUFFERING"
+//                3 -> "STATE_READY"
+//                4 -> "STATE_ENDED"
+//                10001 -> "MUSIC_STATE_PLAY"
+//                10002 -> "MUSIC_STATE_PAUSE"
+//                10003 -> "MUSIC_STATE_END"
+//                else -> "UNKNOWN"
+//            }
+//        }
     }
 
     class MusicFileRemove(var path:String)
     class FavoriteDir(var path:String)
+    @Suppress("unused")
+    class Bookmark(val data:BookmarkData, val isAdd:Boolean = false)
 }

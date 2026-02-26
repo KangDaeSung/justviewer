@@ -13,7 +13,6 @@ import android.widget.OverScroller
 import androidx.core.view.doOnLayout
 import com.kds3393.just.justviewer2.config.SettingImageViewer
 import com.kds3393.just.justviewer2.config.SharedPrefHelper
-import com.kds3393.just.justviewer2.data.BookInfo
 import com.kds3393.just.justviewer2.db.DBMgr
 import com.kds3393.just.justviewer2.dialog.BaseDialog
 import com.kds3393.just.justviewer2.dialog.DlgAlert
@@ -31,6 +30,7 @@ import java.util.ArrayDeque
 import java.util.Collections
 import kotlin.math.abs
 import androidx.core.view.isEmpty
+import com.kds3393.just.justviewer2.data.BookmarkData
 
 const val ZOOM_NONE = -1        //최초 미설정
 const val ZOOM_HALF_SCREEN = 0  //화면의 2배로 늘려 확대해서 본다. 가로가 긴 이미지를 좌우 스크롤로 볼수 있다.
@@ -65,7 +65,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
         }
     }
 
-    fun setup(info: BookInfo) : Boolean{
+    fun setup(info: BookmarkData) : Boolean{
         bookInfo = info
         CLog.e("KDS3393_TEST_setup zoomType[${bookInfo.zoomType}] bookInfo = $bookInfo")
         doOnLayout {
@@ -654,7 +654,7 @@ class ImageViewer @JvmOverloads constructor(context: Context, attrs: AttributeSe
             }
             val dialog = DlgAlert(context, "Move", "${targetPath.getFileName()}이로 이동하시겠습니까?", object : BaseDialog.OnDialogListener {
                 override fun onOk() {
-                    DBMgr.instance.updateImageData(bookInfo)
+                    DBMgr.instance.updateBookmark(bookInfo)
 
                     if (isNext) {
                         bookInfo.setNextBook()

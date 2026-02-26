@@ -81,6 +81,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import com.kds3393.just.justviewer2.R
 import com.kds3393.just.justviewer2.activity.ActBase
 import com.kds3393.just.justviewer2.activity.ActMain
@@ -103,8 +104,9 @@ import common.lib.utils.FileUtils
 import common.lib.utils.SharedBus
 import java.io.File
 
+// [추가] BOOKMARK 정렬 타입 추가
 enum class SortType {
-    NAME, SIZE, RANDOM
+    NAME, SIZE, RANDOM, BOOKMARK
 }
 
 class FrmLocalJC : FrmBase() {
@@ -145,6 +147,10 @@ class FrmLocalJC : FrmBase() {
     ): View {
         type = getArg("type", type)
         rootPath = getArg("rootPath", rootPath)
+
+        SharedBus.register<Event.Bookmark>(lifecycleScope) {
+            updateFileList()
+        }
 
         return ComposeView(requireContext()).apply {
             setContent {
@@ -229,7 +235,7 @@ class FrmLocalJC : FrmBase() {
             return
         }
 
-        val bookmarkPaths = DBMgr.instance.textList.map { it.mPath }.toSet()
+        val bookmarkPaths = DBMgr.instance.getBookmarkList().map { it.targetPath }.toSet()
         val favoriteMap = DBMgr.instance.getFileFavoriteList(currentPath)
         val dirs = ArrayList<FileData>()
         val fileItems = ArrayList<FileData>()
@@ -238,7 +244,6 @@ class FrmLocalJC : FrmBase() {
         for (f in files) {
             if (f.isHidden) continue
 
-            // [추가] 검색어 필터링 logic
             if (searchQuery.isNotEmpty()) {
                 if (!f.name.contains(searchQuery, ignoreCase = true)) {
                     continue
@@ -263,6 +268,7 @@ class FrmLocalJC : FrmBase() {
         favoItems.sortBy { it.mDisplayName }
         dirs.sortBy { it.mDisplayName }
 
+        // [수정] 북마크 정렬 로직 추가
         when (currentSortType) {
             SortType.NAME -> fileItems.sortBy { it.mDisplayName }
             SortType.SIZE -> if (isSortAscending) {
@@ -271,6 +277,7 @@ class FrmLocalJC : FrmBase() {
                 fileItems.sortByDescending { File(it.mPath).length() }
             }
             SortType.RANDOM -> fileItems.shuffle()
+            SortType.BOOKMARK -> fileItems.sortWith(compareByDescending<FileData> { it.mIsBookmarked }.thenBy { it.mDisplayName })
         }
 
         result.addAll(favoItems)
@@ -422,10 +429,12 @@ class FrmLocalJC : FrmBase() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box {
+                                // [수정] 북마크순 텍스트 추가
                                 val sortName = when (currentSortType) {
                                     SortType.NAME -> "이름순"
                                     SortType.SIZE -> if (isSortAscending) "용량순 ▲" else "용량순 ▼"
                                     SortType.RANDOM -> "랜덤순"
+                                    SortType.BOOKMARK -> "북마크순"
                                 }
                                 CText(sortName, fontSize = 15.dp2sp, modifier = Modifier
                                     .clickableOnce { showSortMenu = true }
@@ -461,6 +470,16 @@ class FrmLocalJC : FrmBase() {
                                                 currentSortType = SortType.SIZE
                                                 isSortAscending = true
                                             }
+                                            updateFileList()
+                                            showSortMenu = false
+                                        }
+                                    )
+                                    // [추가] 북마크순 드롭다운 옵션
+                                    DropdownMenuItem(
+                                        text = { CText("북마크순", fontSize = 15.dp2sp, color = if(currentSortType == SortType.BOOKMARK) Colors.Default else Colors.Black) },
+                                        onClick = {
+                                            currentSortType = SortType.BOOKMARK
+                                            isSortAscending = true
                                             updateFileList()
                                             showSortMenu = false
                                         }

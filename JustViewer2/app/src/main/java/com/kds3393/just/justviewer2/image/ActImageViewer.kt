@@ -26,7 +26,6 @@ import com.kds3393.just.justviewer2.R
 import com.kds3393.just.justviewer2.activity.ActBase
 import com.kds3393.just.justviewer2.activity.ActMain
 import com.kds3393.just.justviewer2.compose.CText
-import com.kds3393.just.justviewer2.data.BookInfo
 import com.kds3393.just.justviewer2.databinding.ActImageviewerBinding
 import com.kds3393.just.justviewer2.db.DBMgr
 import com.kds3393.just.justviewer2.dialog.BaseDialog
@@ -36,6 +35,8 @@ import com.kds3393.just.justviewer2.music.player.MusicService
 import com.kds3393.just.justviewer2.music.player.MusicService.LocalBinder
 import com.kds3393.just.justviewer2.views.PageControlView.OnPageControlListener
 import com.kds3393.just.justviewer2.compose.dp2sp
+import com.kds3393.just.justviewer2.data.BOOKMARK_TYPE_IMAGE
+import com.kds3393.just.justviewer2.data.BookmarkData
 import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import common.lib.utils.Size
@@ -47,7 +48,7 @@ import java.io.File
 
 class ActImageViewer : ActBase() {
     lateinit var binding : ActImageviewerBinding
-    lateinit var bookInfo: BookInfo
+    lateinit var bookInfo: BookmarkData
 
     private var sliderValue by mutableFloatStateOf(1f)
     private var sliderMax by mutableFloatStateOf(0f)
@@ -148,13 +149,13 @@ class ActImageViewer : ActBase() {
         super.onStop()
     }
 
-    private fun loadBook(targetPath:String?,allPaths:ArrayList<String>?) : BookInfo? {
+    private fun loadBook(targetPath:String?,allPaths:ArrayList<String>?) : BookmarkData? {
         if (targetPath == null) {
             return null
         }
-        var book = DBMgr.instance.imageDataLoad(targetPath)
+        var book = DBMgr.instance.loadBookmark(targetPath, BOOKMARK_TYPE_IMAGE)
         if (book == null) {
-            book = BookInfo(targetPath)
+            book = BookmarkData(targetPath)
         }
         allPaths?.let { book.books = allPaths }
         return book
@@ -167,7 +168,7 @@ class ActImageViewer : ActBase() {
             binding.imageviewer.pageCount - 1 - binding.imageviewer.getPageIndex()
         }
         binding.imageviewer.bookInfo.currentPage = index
-        DBMgr.instance.updateImageData(binding.imageviewer.bookInfo)
+        DBMgr.instance.updateBookmark(binding.imageviewer.bookInfo)
         CLog.e("KDS3393_TEST_save data bookInfo = ${binding.imageviewer.bookInfo}")
     }
 
