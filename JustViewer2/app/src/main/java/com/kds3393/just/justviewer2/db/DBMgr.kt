@@ -93,11 +93,11 @@ class DBMgr {
             cursor.use {
                 cursor.moveToFirst()
                 book = BookInfo(DBUtils.obtainString(it, DBInfo._PATH))
-                book!!.id = DBUtils.obtainLong(it, DBInfo._ID)
-                book!!.currentPage = DBUtils.obtainInt(it, DBInfo._PAGE)
-                book!!.isLeft = DBUtils.obtainInt(it, DBInfo.IS_LEFT)
-                book!!.zoomType = DBUtils.obtainInt(it, DBInfo.ZOOM_TYPE)
-                book!!.zoomStandardHeight = DBUtils.obtainInt(it, DBInfo.ZOOM_HEIGHT)
+                book.id = DBUtils.obtainLong(it, DBInfo._ID)
+                book.currentPage = DBUtils.obtainInt(it, DBInfo._PAGE)
+                book.isLeft = DBUtils.obtainInt(it, DBInfo.IS_LEFT)
+                book.zoomType = DBUtils.obtainInt(it, DBInfo.ZOOM_TYPE)
+                book.zoomStandardHeight = DBUtils.obtainInt(it, DBInfo.ZOOM_HEIGHT)
             }
             return book
         }
