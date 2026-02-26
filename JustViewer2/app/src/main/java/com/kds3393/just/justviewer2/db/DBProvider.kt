@@ -34,11 +34,18 @@ class DBProvider(context: Context?, path: String?) {
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            db.execSQL("DROP TABLE IF EXISTS " + DBInfo.FAVO_BOOKMARK_TABLE)
-            db.execSQL("DROP TABLE IF EXISTS image_bookmark_table") // 구형 테이블
-            db.execSQL("DROP TABLE IF EXISTS txt_bookmark_table")   // 구형 테이블
-            db.execSQL("DROP TABLE IF EXISTS " + DBInfo.BOOKMARK_TABLE)
-            onCreate(db)
+            if (oldVersion < newVersion) {
+                try {
+                    db.execSQL("DROP TABLE IF EXISTS ${DBInfo.FAVO_BOOKMARK_TABLE}")
+                    db.execSQL("DROP TABLE IF EXISTS ${DBInfo.BOOKMARK_TABLE}")
+                    db.execSQL("DROP TABLE IF EXISTS image_bookmark_table")
+                    db.execSQL("DROP TABLE IF EXISTS txt_bookmark_table")
+
+                    onCreate(db)
+                } catch (e: SQLiteException) {
+                    CLog.e(e)
+                }
+            }
         }
     }
 
