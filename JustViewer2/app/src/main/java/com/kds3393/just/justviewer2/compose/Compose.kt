@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
@@ -134,11 +135,12 @@ fun TopBar(act: ActBase, title: String = "", barHeight:Dp = 80.dp,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExplorerBar(act: ActBase, title: String = "", path:String = "", barHeight:Dp = 80.dp,
-           backBtnColor:Color = Color(0xff333333),
-           containerColor:Color = Color.White,
-           contextColor:Color = Color.Black,
-           actions: @Composable RowScope.() -> Unit = {}) {
+fun ExplorerBar(act: ActBase, title: String = "", path:String = "", fileCount:Int = 0, selectedCount: Int = 0,
+                barHeight:Dp = 80.dp,
+                backBtnColor:Color = Color(0xff333333),
+                containerColor:Color = Color.White,
+                contextColor:Color = Color.Black,
+                actions: @Composable RowScope.() -> Unit = {}) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     TopAppBar(
         modifier = Modifier.height(barHeight),
@@ -146,22 +148,54 @@ fun ExplorerBar(act: ActBase, title: String = "", path:String = "", barHeight:Dp
         title = {
             Column(verticalArrangement = Arrangement.Center) {
                 if (title.isNotEmpty()) {
-                    CText(title,
-                        maxLines = 1,
-                        fontSize = 15.dp2sp,
-                        color = contextColor,
-                        fontWeight = FontWeight.SemiBold,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            platformStyle = PlatformTextStyle(
-                                includeFontPadding = false
-                            ),
-                            lineHeightStyle = LineHeightStyle(
-                                alignment = LineHeightStyle.Alignment.Center,
-                                trim = LineHeightStyle.Trim.Both
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CText(title,
+                            maxLines = 1,
+                            fontSize = 15.dp2sp,
+                            color = contextColor,
+                            fontWeight = FontWeight.SemiBold,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                platformStyle = PlatformTextStyle(
+                                    includeFontPadding = false
+                                ),
+                                lineHeightStyle = LineHeightStyle(
+                                    alignment = LineHeightStyle.Alignment.Center,
+                                    trim = LineHeightStyle.Trim.Both
+                                )
                             )
                         )
-                    )
+                        if (fileCount > 0) {
+                            CText(text = fileCount.toString(), fontSize = 10.dp2sp, color = Colors.White,
+                                style = TextStyle(
+                                    platformStyle = PlatformTextStyle(
+                                        includeFontPadding = false
+                                    ),
+                                    lineHeightStyle = LineHeightStyle(
+                                        alignment = LineHeightStyle.Alignment.Center,
+                                        trim = LineHeightStyle.Trim.Both
+                                    )
+                                ),
+                                modifier = Modifier.wrapContentHeight().padding(start = 5.dp)
+                                    .background(color = Colors.Black, shape = RoundedCornerShape(5.dp))
+                                    .padding(horizontal = 3.dp, vertical = 2.dp))
+                        }
+                        if (selectedCount > 0) {
+                            CText(text = selectedCount.toString(), fontSize = 10.dp2sp, color = Colors.White,
+                                style = TextStyle(
+                                    platformStyle = PlatformTextStyle(
+                                        includeFontPadding = false
+                                    ),
+                                    lineHeightStyle = LineHeightStyle(
+                                        alignment = LineHeightStyle.Alignment.Center,
+                                        trim = LineHeightStyle.Trim.Both
+                                    )
+                                ),
+                                modifier = Modifier.wrapContentHeight().padding(start = 5.dp)
+                                    .background(color = Color(0xFF7C79E1), shape = RoundedCornerShape(5.dp))
+                                    .padding(horizontal = 4.dp, vertical = 2.dp))
+                        }
+                    }
                 }
                 if (path.isNotEmpty()) {
                     CText(path,

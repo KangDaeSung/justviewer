@@ -1,5 +1,6 @@
 package com.kds3393.just.justviewer2.text
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.TextUtils
 import android.widget.Toast
@@ -33,17 +34,21 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FindInPage
 import androidx.compose.material.icons.filled.FontDownload
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -52,6 +57,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -94,37 +100,48 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileInputStream
-import java.io.InputStreamReader
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
 import kotlin.math.roundToInt
+
+// 파일 읽기 결과와 인코딩 정보를 담기 위한 Data Class
+data class FileReadResult(
+    val lines: List<String>,
+    val encoding: String
+)
 
 class ActTextViewerJC : ActBase() {
     private lateinit var textData: BookmarkData
 
-    private val filePathList = ListViewModel<String>()  //관련 컨텐츠 파일 리스트
-    private var contentPath by mutableStateOf("")   //현재 Viewer의 파일 경로
-    private val textListState = ListViewModel<String>()     //컨텐츠의 Text
+    private val filePathList = ListViewModel<String>()
+    private var contentPath by mutableStateOf("")
+    private val textListState = ListViewModel<String>()
 
-    private val searchResultMap = MapViewModel<Int,ArrayList<MatchResult>>()   //검색 결과
-    private var searchResultKeys : List<Int>? = null   //검색 내용으로 이동하기 위한 position 저장 배열
+    private val searchResultMap = MapViewModel<Int,ArrayList<MatchResult>>()
+    private var searchResultKeys : List<Int>? = null
 
-    private var isContentLoading by mutableStateOf(true)    //true:Text loading 중인 상태
+    private var isContentLoading by mutableStateOf(true)
+
+    // 파일 정보 상태
+    private var fileEncoding by mutableStateOf("")
+    private var fileSizeBytes by mutableLongStateOf(0L)
+    private var charCount by mutableIntStateOf(0)
+    private var lineCount by mutableIntStateOf(0)
+    private var isShowFileInfo by mutableStateOf(false)
 
     @Preview
     @Composable
     fun Preview() {
         isShowFastScroll = true
         isShowSearch = true
-        textListState.add("text text key text key text keytext text textkey text key")
+        textListState.add("text sample line 1")
         Content()
     }
-    private var firstIndex = -1     //첫 실행때 페이지 이동을 위한 값, 사용후 -값을 설정하여 1회만 사용하게 함
+    private var firstIndex = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         contentPath = intent.getStringExtra(ActMain.EXTRA_BROWSER_PATH)?:""
@@ -148,9 +165,10 @@ class ActTextViewerJC : ActBase() {
                 } else {
                     Content()
                     ManuUI()
+                    FileInfoDialog()
+                    DeleteConfirmDialog()
                 }
             }
-
         }
 
         readBook()
@@ -174,7 +192,13 @@ class ActTextViewerJC : ActBase() {
         } else if (isShowFastScroll) {
             isShowFastScroll = false
             false
-        } else {
+        } else if (isShowFileInfo) {
+            isShowFileInfo = false
+            false
+        } else if (isShowDeleteDialog) {
+            isShowDeleteDialog = false
+            false
+        }else {
             true
         }
     }
@@ -287,12 +311,9 @@ class ActTextViewerJC : ActBase() {
         var boxHeight by remember { mutableIntStateOf(0) }
         var buttonHeight by remember { mutableIntStateOf(0) }
 
-        // 코루틴 스코프와 현재 수행 중인 스크롤 작업을 저장할 변수
         val coroutineScope = rememberCoroutineScope()
         var scrollJob by remember { mutableStateOf<Job?>(null) }
 
-        // 1. 스크롤바 버튼 위치 계산 (리스트가 움직일 때 버튼도 따라오도록)
-        // derivedStateOf를 사용하여 불필요한 계산 최소화
         val indicatorOffset by remember {
             derivedStateOf {
                 if (listSize <= 0 || boxHeight <= 0 || buttonHeight <= 0) 0f
@@ -301,19 +322,13 @@ class ActTextViewerJC : ActBase() {
                     val visibleItemsCount = layoutInfo.visibleItemsInfo.size
                     val maxScrollIndex = (listSize - visibleItemsCount).coerceAtLeast(1)
 
-                    // 현재 리스트의 진행률 (0.0 ~ 1.0)
                     val progress = (listState.firstVisibleItemIndex.toFloat() / maxScrollIndex.toFloat()).coerceIn(0f, 1f)
-
-                    // 이동 가능한 최대 픽셀 범위
                     val maxOffset = (boxHeight - buttonHeight).coerceAtLeast(0).toFloat()
-
                     progress * maxOffset
                 }
             }
         }
 
-        // 2. 드래그 중일 때 버튼의 임시 위치를 저장하는 변수
-        // isDragging 상태를 두어 드래그 중에는 indicatorOffset(리스트 기준)을 무시하고 내 손가락(dragOffset)을 우선시함
         var isDragging by remember { mutableStateOf(false) }
         var dragOffset by remember { mutableFloatStateOf(0f) }
 
@@ -326,7 +341,6 @@ class ActTextViewerJC : ActBase() {
             Box(modifier = Modifier
                 .size(30.dp)
                 .onSizeChanged { buttonHeight = it.height }
-                // 드래그 중이면 내 손가락 위치(dragOffset), 아니면 리스트 위치(indicatorOffset)를 따라감
                 .offset {
                     IntOffset(0, (if (isDragging) dragOffset else indicatorOffset).roundToInt())
                 }
@@ -334,31 +348,26 @@ class ActTextViewerJC : ActBase() {
                     orientation = Orientation.Vertical,
                     state = rememberDraggableState { delta ->
                         val maxOffset = (boxHeight - buttonHeight).coerceAtLeast(1).toFloat()
-
-                        // 드래그 위치 즉시 업데이트 (UI 반응성 확보)
                         dragOffset = (dragOffset + delta).coerceIn(0f, maxOffset)
 
-                        // 인덱스 계산
                         val layoutInfo = listState.layoutInfo
                         val visibleItemsCount = layoutInfo.visibleItemsInfo.size
                         val maxScrollIndex = (listSize - visibleItemsCount).coerceAtLeast(1)
                         val newIndex = ((dragOffset / maxOffset) * maxScrollIndex).toInt().coerceIn(0, listSize - 1)
 
-                        // 핵심 성능 최적화: 이전 스크롤 취소 후 최신 위치로 이동
                         if (newIndex != listState.firstVisibleItemIndex) {
-                            scrollJob?.cancel() // 1. 이전 이동 명령 취소
+                            scrollJob?.cancel()
                             scrollJob = coroutineScope.launch {
-                                listState.scrollToItem(newIndex) // 2. 최신 위치로 이동
+                                listState.scrollToItem(newIndex)
                             }
                         }
                     },
                     onDragStarted = {
                         isDragging = true
-                        dragOffset = indicatorOffset // 드래그 시작 시 현재 위치에서 시작
+                        dragOffset = indicatorOffset
                     },
                     onDragStopped = {
                         isDragging = false
-                        // 드래그가 끝나면 마지막 위치 확정
                     }
                 )
                 .background(Color.Red, RoundedCornerShape(4.dp))
@@ -366,8 +375,8 @@ class ActTextViewerJC : ActBase() {
         }
     }
 
-    private var prevIsEnable by mutableStateOf(false)       //숨긴 Text Index
-    private var nextIsEnable by mutableStateOf(false)       //숨긴 Text Index
+    private var prevIsEnable by mutableStateOf(false)
+    private var nextIsEnable by mutableStateOf(false)
     @Composable
     fun Search(onMoveCallback:(Int) -> Unit) {
         var searchKey by remember { mutableStateOf("") }
@@ -418,7 +427,6 @@ class ActTextViewerJC : ActBase() {
                     }
                 }
 
-                CLog.e("KDS3393_TEST_MOVE prev moveIndex[${moveIndex}] moveLine[${if (moveIndex >= 0) searchResultKeys!![moveIndex] else ""}]")
                 if (moveIndex >= 0) {
                     nextIsEnable = moveIndex < searchResultKeys!!.size
                 }
@@ -440,7 +448,6 @@ class ActTextViewerJC : ActBase() {
                         }
                     }
                 }
-                CLog.e("KDS3393_TEST_MOVE prev moveIndex[${moveIndex}] moveLine[${if (moveIndex >= 0) searchResultKeys!![moveIndex] else ""}]")
                 if (moveIndex >= 0) {
                     nextIsEnable = moveIndex < searchResultKeys!!.size
                     prevIsEnable = moveIndex > 0
@@ -456,9 +463,9 @@ class ActTextViewerJC : ActBase() {
         }
     }
 
-    private var textColorIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_COLOR_INDEX, 3])       //Text와 background의 color
-    private var textSizeIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_SIZE_INDEX, 1])       //TextSize
-    private var textGapIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_GAP_INDEX, 0])       //text 줄 간격
+    private var textColorIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_COLOR_INDEX, 3])
+    private var textSizeIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_SIZE_INDEX, 1])
+    private var textGapIndex by mutableIntStateOf(SharePref[SharePref.SHARE_TEXT_GAP_INDEX, 0])
     private var searchKey by mutableStateOf("")
     @Composable
     fun TextItem(index: Int, item: AnnotatedString) {
@@ -486,20 +493,22 @@ class ActTextViewerJC : ActBase() {
             Text(
                 text = item,
                 fontSize = sSizes[textSizeIndex].dp2sp,
-                color = sColors[textColorIndex][1], // 설정된 테마 색상 적용
+                color = sColors[textColorIndex][1],
                 lineHeight = sSizes[textSizeIndex].dp2sp * sGapss[textGapIndex],
                 modifier = Modifier
-                    .weight(1f) // 남은 가로 공간을 모두 차지하도록 설정
+                    .weight(1f)
                     .padding(horizontal = 8.dp)
             )
         }
     }
 
 
-    private var isShowMenu by mutableStateOf(true)  //메뉴 보여줄지 여부
-    private var isShowSearch by mutableStateOf(false)    //검색 모드
-    private var isShowSetting by mutableStateOf(false)    //설정
-    private var isShowFastScroll by mutableStateOf(false)    //빠른 스크롤 모드
+    private var isShowMenu by mutableStateOf(true)
+    private var isShowSearch by mutableStateOf(false)
+    private var isShowSetting by mutableStateOf(false)
+    private var isShowFastScroll by mutableStateOf(false)
+    private var isShowDeleteDialog by mutableStateOf(false)
+
     @Composable
     fun ManuUI() {
         if (isShowMenu) {
@@ -560,13 +569,103 @@ class ActTextViewerJC : ActBase() {
                         isShowMenu = false
                         isShowSetting = false
                     }) { Icon(imageVector = Icons.Default.FindInPage, tint = Color.White, contentDescription = "Icon") }
+
+                    IconButton(onClick = {
+                        isShowDeleteDialog = true
+                        isShowMenu = false
+                        isShowSetting = false
+                    }) { Icon(imageVector = Icons.Default.Delete, tint = Color.White, contentDescription = "Delete File") }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    IconButton(onClick = {
+                        isShowFileInfo = true
+                        isShowMenu = false
+                        isShowSetting = false
+                    }) { Icon(imageVector = Icons.Default.Info, tint = Color.White, contentDescription = "Document Info") }
                 }
             }
         }
     }
 
+    @Composable
+    fun DeleteConfirmDialog() {
+        if (isShowDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { isShowDeleteDialog = false },
+                title = { Text(text = "파일 삭제", style = MaterialTheme.typography.titleLarge) },
+                text = { Text("현재 보고 있는 '${contentPath.getFileName()}' 파일을 삭제하시겠습니까?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        isShowDeleteDialog = false
+                        deleteCurrentFile()
+                    }) {
+                        Text("확인")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { isShowDeleteDialog = false }) {
+                        Text("취소")
+                    }
+                }
+            )
+        }
+    }
+
+    private fun deleteCurrentFile() {
+        val file = File(contentPath)
+        if (file.exists()) {
+            if (file.delete()) {
+                Toast.makeText(this@ActTextViewerJC, "파일이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                finish()
+            } else {
+                Toast.makeText(this@ActTextViewerJC, "파일 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this@ActTextViewerJC, "파일을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+    }
+
+    // 문서 정보 팝업
+    @Composable
+    fun FileInfoDialog() {
+        if (isShowFileInfo) {
+            AlertDialog(
+                onDismissRequest = { isShowFileInfo = false },
+                title = { Text(text = "문서 정보", style = MaterialTheme.typography.titleLarge) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // 요청하신 디코더 명칭 표시 추가
+                        Text("사용된 디코더: $fileEncoding")
+
+                        val kb = fileSizeBytes / 1024.0
+                        val mb = kb / 1024.0
+                        val sizeStr = when {
+                            mb >= 1.0 -> String.format("%.2f MB", mb)
+                            kb >= 1.0 -> String.format("%.2f KB", kb)
+                            else -> "$fileSizeBytes B"
+                        }
+                        Text("용량: $sizeStr")
+
+                        Text("줄 수: ${String.format("%,d", lineCount)} 줄")
+                        Text("글자 수: ${String.format("%,d", charCount)} 자 (공백 포함)")
+
+                        val volumes = charCount / 150000f
+                        Text("예상 권수: ${String.format("%d", Math.round(volumes))} 권\n(200자 원고지 300매 기준)")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { isShowFileInfo = false }) {
+                        Text("확인")
+                    }
+                }
+            )
+        }
+    }
+
     private var corutineJob : Job? = null
-    private fun readBook(charset: Charset? = StandardCharsets.UTF_8) {
+    private fun readBook() {
         if (corutineJob?.isActive == true) {
             return
         }
@@ -575,59 +674,85 @@ class ActTextViewerJC : ActBase() {
             val file = File(contentPath)
             if (file.exists() && file.isFile && file.canRead()) {
                 try {
+                    fileSizeBytes = file.length()
                     textListState.clearList()
-                    if (charset != null) {
-                        //SDK 26이상 지원
-                        Files.lines(Paths.get(contentPath),charset).use { stream -> stream.forEach { line ->
-                            textListState.add(line.replace("&nbsp;", ""))
-                        }}
-                    } else {
-                        FileInputStream(contentPath).use { fis ->
-                            // BOM 바이트가 존재하는지 확인합니다.
-                            val bom = ByteArray(3)
-                            val readBytes = fis.read(bom, 0, 3)
-                            // UTF-8 BOM: 0xEF, 0xBB, 0xBF
-                            val hasBOM = readBytes == 3 && bom[0] == 0xEF.toByte() && bom[1] == 0xBB.toByte() && bom[2] == 0xBF.toByte()
-                            // BOM이 없으면 스트림의 위치를 다시 처음으로 설정합니다.
-                            if (!hasBOM) {
-                                fis.channel.position(0)
-                            }
-                            InputStreamReader(fis, StandardCharsets.UTF_8).use { isr ->
-                                BufferedReader(isr).use { reader ->
-                                    var line: String
-                                    while (reader.readLine().also { line = it } != null) {
-                                        textListState.add(line.replace("&nbsp;", ""))
-                                    }
-                                }
-                            }
-                        }
+
+                    val result = readFileWithComprehensiveEncoding(file)
+
+                    var tempCharCount = 0
+                    for (line in result.lines) {
+                        val cleanLine = line.replace("\uFEFF", "").replace("&nbsp;", "")
+                        tempCharCount += cleanLine.length
+                        textListState.add(cleanLine)
                     }
+
+                    fileEncoding = result.encoding
+                    charCount = tempCharCount
+                    lineCount = result.lines.size
+
                     isContentLoading = false
                 } catch (e: Exception) {
-                    CLog.e("KDS3393_TEST_readBook Exception[$charset] = $contentPath")
-                    CLog.e(e)
-                    corutineJob?.cancel()
-                    if (charset == StandardCharsets.UTF_8) {
-                        readBook(StandardCharsets.UTF_16LE)
-                    } else if (charset == StandardCharsets.UTF_16LE) {
-                        readBook(null)
-                    }
+                    CLog.e("KDS3393_TEST_readBook Exception = $contentPath")
+                    isContentLoading = false
                 }
+            } else {
+                isContentLoading = false
             }
         }
     }
 
-    //key : 검색할 키워드
+    private fun readFileWithComprehensiveEncoding(file: File): FileReadResult {
+        val bytes = file.readBytes()
+        if (bytes.isEmpty()) return FileReadResult(emptyList(), "Unknown")
+
+        // BOM 체크 및 디코더 명칭 설정
+        if (bytes.size >= 3 && bytes[0] == 0xEF.toByte() && bytes[1] == 0xBB.toByte() && bytes[2] == 0xBF.toByte()) {
+            return FileReadResult(String(bytes, 3, bytes.size - 3, StandardCharsets.UTF_8).lines(), "UTF-8 (BOM)")
+        }
+        if (bytes.size >= 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte()) {
+            return FileReadResult(String(bytes, StandardCharsets.UTF_16LE).lines(), "UTF-16LE (BOM)")
+        }
+        if (bytes.size >= 2 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte()) {
+            return FileReadResult(String(bytes, StandardCharsets.UTF_16BE).lines(), "UTF-16BE (BOM)")
+        }
+
+        // UTF-8 엄격 검사
+        try {
+            val utf8Decoder = StandardCharsets.UTF_8.newDecoder().apply {
+                onMalformedInput(CodingErrorAction.REPORT)
+                onUnmappableCharacter(CodingErrorAction.REPORT)
+            }
+            val decoded = utf8Decoder.decode(ByteBuffer.wrap(bytes)).toString()
+            return FileReadResult(decoded.lines(), "UTF-8")
+        } catch (e: Exception) {}
+
+        // CP949 시도
+        val cp949CharsetName = try {
+            Charset.forName("CP949").name()
+        } catch (e: Exception) {
+            "EUC-KR"
+        }
+
+        val cp949Decoder = Charset.forName(cp949CharsetName).newDecoder().apply {
+            onMalformedInput(CodingErrorAction.REPLACE)
+            onUnmappableCharacter(CodingErrorAction.REPLACE)
+        }
+
+        return try {
+            val decoded = cp949Decoder.decode(ByteBuffer.wrap(bytes)).toString()
+            FileReadResult(decoded.lines(), cp949CharsetName)
+        } catch (e: Exception) {
+            FileReadResult(String(bytes, StandardCharsets.UTF_8).lines(), "UTF-8 (Fallback)")
+        }
+    }
+
     private fun search(key:String) : Int {
         runBlocking {
             val job = launch {
-                CLog.e("KDS3393_TEST_search START key = $key")
-                var lineCount = 0
                 if (key.isNotEmpty()) {
                     val pattern = Regex("\\b$key\\w*\\b")
                     searchResultMap.clearList()
                     for ((index, line) in textListState.get().withIndex()) {
-                        lineCount++
                         pattern.findAll(line).forEach { matchResult ->
                             var matchs = searchResultMap.get()[index]
                             if (matchs == null) {
@@ -637,27 +762,8 @@ class ActTextViewerJC : ActBase() {
                             matchs.add(matchResult)
                         }
                     }
-                    searchResultKeys = searchResultMap.get().keys.sorted().sorted()
-                    run breaker@ {
-                        searchResultKeys?.forEachIndexed { index, line ->
-                            if (firstVisibleItemIndex < line) {
-                                prevIsEnable = index > 0
-                                return@breaker
-                            }
-                        }
-                    }
-                    run breaker@ {
-                        searchResultKeys?.forEachIndexed { index, line ->
-                            if (firstVisibleItemIndex < line) {
-                                nextIsEnable = index < searchResultKeys!!.size
-                                return@breaker
-                            }
-                        }
-                    }
-
-                    CLog.e("KDS3393_TEST_search ResultKeys = $searchResultKeys")
+                    searchResultKeys = searchResultMap.get().keys.sorted()
                 }
-                CLog.e("KDS3393_TEST_search END key = $key lineCount[$lineCount] findCount[${searchResultMap.size()}]")
             }
             job.join()
 

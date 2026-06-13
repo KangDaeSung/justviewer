@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1022575070746",
+    "firebase_url": "https://justviewer-fb25f.firebaseio.com",
+    "project_id": "justviewer-fb25f",
+    "storage_bucket": "justviewer-fb25f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1022575070746:android:b52024f3928e153b",
+        "android_client_info": {
+          "package_name": "com.kds3393.just.justviewer2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1022575070746-rm1qr3fknlt36c17nup267tsvj3nni9b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kds3393.just.justviewer2",
+            "certificate_hash": "656253e554659d598bdf8f855f1b45016b13a237"
+          }
+        },
+        {
+          "client_id": "1022575070746-n1ks8k918tsob08igtffd5iarj8qg7km.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJXXgyVArRi6E9ZjT1H2G9RxiIl7DeufE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1022575070746-n1ks8k918tsob08igtffd5iarj8qg7km.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

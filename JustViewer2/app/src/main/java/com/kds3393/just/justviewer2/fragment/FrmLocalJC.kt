@@ -13,6 +13,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -47,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -75,6 +77,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
@@ -99,14 +102,14 @@ import com.kds3393.just.justviewer2.image.ActImageViewer
 import com.kds3393.just.justviewer2.renamer.ActRenamer
 import com.kds3393.just.justviewer2.text.ActTextViewerJC
 import com.kds3393.just.justviewer2.utils.Event
+import com.kds3393.just.justviewer2.utils.SharePref
 import common.lib.debug.CLog
 import common.lib.utils.FileUtils
 import common.lib.utils.SharedBus
 import java.io.File
 
-// [추가] BOOKMARK 정렬 타입 추가
 enum class SortType {
-    NAME, SIZE, RANDOM, BOOKMARK
+    NAME, SIZE, RANDOM
 }
 
 class FrmLocalJC : FrmBase() {
@@ -119,12 +122,12 @@ class FrmLocalJC : FrmBase() {
 
     var showDeleteDialog by mutableStateOf(false)
 
-    var currentSortType by mutableStateOf(SortType.NAME) // 정렬상태
-    var isSortAscending by mutableStateOf(true)         //용량순 정렬시 오름차순,내림차순 정렬 선택
+    var currentSortType by mutableStateOf(SortType.NAME)
+    var isSortAscending by mutableStateOf(true)
+    var isBookmarkFirst by mutableStateOf(false) // 북마크 우선 정렬 상태
 
     var isSearchMode by mutableStateOf(false)
     var searchQuery by mutableStateOf("")
-    // [추가] 검색 시 매번 파일을 다시 읽지 않기 위해 원본 리스트 캐싱
     var currentRawFiles by mutableStateOf<List<File>?>(null)
 
     val addFavoriteQueue = mutableStateListOf<FileData>()
@@ -137,7 +140,40 @@ class FrmLocalJC : FrmBase() {
         set(param) { field = setArg("rootPath", param) }
 
     companion object {
-        const val TYPE_LOCAL_EXPLORER = 0   // 기본 파일 목록
+        const val TYPE_LOCAL_EXPLORER = 0
+
+        const val KEY_SORT_TYPE = "KEY_LOCAL_SORT_TYPE"
+        const val KEY_SORT_ASC = "KEY_LOCAL_SORT_ASC"
+        const val KEY_BOOKMARK_FIRST = "KEY_LOCAL_BOOKMARK_FIRST"
+    }
+
+    private fun loadSortPreferences() {
+        val savedSortName = SharePref[KEY_SORT_TYPE, SortType.NAME.name]
+
+        currentSortType = try {
+            SortType.valueOf(savedSortName)
+        } catch (e: Exception) {
+            SortType.NAME
+        }
+        isSortAscending = SharePref[KEY_SORT_ASC, true]
+        isBookmarkFirst = SharePref[KEY_BOOKMARK_FIRST, false]
+    }
+
+    private fun changeSortAndSave(type: SortType, isAsc: Boolean) {
+        currentSortType = type
+        isSortAscending = isAsc
+
+        SharePref.put(KEY_SORT_TYPE, currentSortType.name)
+        SharePref.put(KEY_SORT_ASC, isSortAscending)
+
+        updateFileList()
+    }
+
+    private fun changeBookmarkFirstAndSave(isFirst: Boolean) {
+        isBookmarkFirst = isFirst
+        SharePref.put(KEY_BOOKMARK_FIRST, isBookmarkFirst)
+
+        updateFileList()
     }
 
     override fun onCreateView(
@@ -147,6 +183,8 @@ class FrmLocalJC : FrmBase() {
     ): View {
         type = getArg("type", type)
         rootPath = getArg("rootPath", rootPath)
+
+        loadSortPreferences()
 
         SharedBus.register<Event.Bookmark>(lifecycleScope) {
             updateFileList()
@@ -160,9 +198,8 @@ class FrmLocalJC : FrmBase() {
                     }
                 }
 
-                // 검색어 변경 감지하여 리스트 업데이트
-                LaunchedEffect(searchQuery, currentSortType) {
-                    if (isSearchMode || searchQuery.isNotEmpty()) {
+                LaunchedEffect(searchQuery, currentSortType, isBookmarkFirst) {
+                    if (isSearchMode || searchQuery.isNotEmpty() || currentPath.isNotEmpty()) {
                         updateFileList()
                     }
                 }
@@ -198,7 +235,6 @@ class FrmLocalJC : FrmBase() {
         targetPath = file.path
         currentPath = targetPath
 
-        // 폴더 이동 시 검색/선택 초기화
         clearSelection()
         closeSearchMode()
 
@@ -208,20 +244,16 @@ class FrmLocalJC : FrmBase() {
         } else {
             val target = File(targetPath)
             if (target.isDirectory) {
-                // 원본 파일 리스트 저장
                 currentRawFiles = FileUtils.getDirFileList(targetPath)
                 updateFileList()
             }
         }
     }
 
-    // [수정] 파일 리스트 처리 (필터링 + 정렬)
     private fun updateFileList() {
         val files = currentRawFiles
         val result = ArrayList<FileData>()
 
-        // 최상위 경로가 아니면 ".." 아이템 추가 (검색 중일 때도 상위 이동 가능하게 유지하거나, 원하면 숨길 수 있음)
-        // 여기서는 검색 중에도 상위 폴더 이동 가능하도록 유지
         if (currentPath != rootPath && currentPath != "/") {
             val parentData = FileData(File(currentPath))
             parentData.mDisplayName = ".."
@@ -264,11 +296,10 @@ class FrmLocalJC : FrmBase() {
             }
         }
 
-        // 정렬
         favoItems.sortBy { it.mDisplayName }
         dirs.sortBy { it.mDisplayName }
 
-        // [수정] 북마크 정렬 로직 추가
+        // 1차 정렬
         when (currentSortType) {
             SortType.NAME -> fileItems.sortBy { it.mDisplayName }
             SortType.SIZE -> if (isSortAscending) {
@@ -277,7 +308,11 @@ class FrmLocalJC : FrmBase() {
                 fileItems.sortByDescending { File(it.mPath).length() }
             }
             SortType.RANDOM -> fileItems.shuffle()
-            SortType.BOOKMARK -> fileItems.sortWith(compareByDescending<FileData> { it.mIsBookmarked }.thenBy { it.mDisplayName })
+        }
+
+        // 2차 정렬: 북마크 항목 상단 표시 (코틀린의 정렬은 Stable하므로 기존 순서 유지)
+        if (isBookmarkFirst) {
+            fileItems.sortByDescending { it.mIsBookmarked }
         }
 
         result.addAll(favoItems)
@@ -296,11 +331,10 @@ class FrmLocalJC : FrmBase() {
         return true
     }
 
-    // [추가] 검색 모드 종료
     private fun closeSearchMode() {
         isSearchMode = false
         searchQuery = ""
-        updateFileList() // 리스트 원상복구
+        updateFileList()
     }
 
     private fun toggleItemSelection(data: FileData) {
@@ -324,7 +358,6 @@ class FrmLocalJC : FrmBase() {
         addFavoriteQueue.clear()
     }
 
-    // ... (deleteSelectedItems, addSelectedToFavorites, confirmAddFavorite 등 기존 로직 동일)
     private fun deleteSelectedItems() {
         val targets = ArrayList(selectedItems)
         var isDeleted = false
@@ -388,14 +421,13 @@ class FrmLocalJC : FrmBase() {
     @Composable
     fun LocalScreen() {
         val canGoUp = currentPath.isNotEmpty() && currentPath != rootPath && currentPath != "/"
-        // [수정] BackHandler 조건에 검색 모드 추가
         val shouldInterceptBack = isSelectionMode || isSearchMode || canGoUp
 
         var showSortMenu by remember { mutableStateOf(false) }
 
         BackHandler(enabled = shouldInterceptBack) {
             when {
-                isSearchMode -> closeSearchMode() // 검색 모드 닫기 우선
+                isSearchMode -> closeSearchMode()
                 isSelectionMode -> clearSelection()
                 else -> moveParent(rootPath)
             }
@@ -405,23 +437,23 @@ class FrmLocalJC : FrmBase() {
             topBar = {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     if (isSearchMode) {
-                        // [추가] 검색 바
                         SearchBar(
                             query = searchQuery,
                             onQueryChange = { searchQuery = it },
                             onClose = { closeSearchMode() }
                         )
                     } else {
-                        // 기본 탐색 바
+                        val fileList = fileListState.stateList
                         ExplorerBar(
                             act = requireActivity() as ActBase,
                             title = FileUtils.getFileName(currentPath),
                             path = currentPath,
+                            fileCount = fileList.size,
+                            selectedCount = selectedItems.size,
                             containerColor = Colors.White,
                             contextColor = Color.Black,
                             barHeight = 54.dp
                         )
-
                         Row(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
@@ -429,12 +461,10 @@ class FrmLocalJC : FrmBase() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box {
-                                // [수정] 북마크순 텍스트 추가
                                 val sortName = when (currentSortType) {
                                     SortType.NAME -> "이름순"
                                     SortType.SIZE -> if (isSortAscending) "용량순 ▲" else "용량순 ▼"
                                     SortType.RANDOM -> "랜덤순"
-                                    SortType.BOOKMARK -> "북마크순"
                                 }
                                 CText(sortName, fontSize = 15.dp2sp, modifier = Modifier
                                     .clickableOnce { showSortMenu = true }
@@ -445,12 +475,30 @@ class FrmLocalJC : FrmBase() {
                                     onDismissRequest = { showSortMenu = false },
                                     modifier = Modifier.background(Colors.White)
                                 ) {
+                                    // 북마크 최상단 체크박스
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Checkbox(
+                                                    checked = isBookmarkFirst,
+                                                    onCheckedChange = null
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                CText("북마크", fontSize = 15.dp2sp, color = Colors.Black)
+                                            }
+                                        },
+                                        onClick = {
+                                            changeBookmarkFirstAndSave(!isBookmarkFirst)
+                                            showSortMenu = false
+                                        }
+                                    )
+
+                                    HorizontalDivider(color = Colors.Gray200)
+
                                     DropdownMenuItem(
                                         text = { CText("이름순", fontSize = 15.dp2sp, color = if(currentSortType == SortType.NAME) Colors.Default else Colors.Black) },
                                         onClick = {
-                                            currentSortType = SortType.NAME
-                                            isSortAscending = true
-                                            updateFileList() // 로컬 정렬만 수행
+                                            changeSortAndSave(SortType.NAME, true)
                                             showSortMenu = false
                                         }
                                     )
@@ -464,32 +512,15 @@ class FrmLocalJC : FrmBase() {
                                             CText(sizeText, fontSize = 15.dp2sp, color = if(currentSortType == SortType.SIZE) Colors.Default else Colors.Black)
                                         },
                                         onClick = {
-                                            if (currentSortType == SortType.SIZE) {
-                                                isSortAscending = !isSortAscending
-                                            } else {
-                                                currentSortType = SortType.SIZE
-                                                isSortAscending = true
-                                            }
-                                            updateFileList()
-                                            showSortMenu = false
-                                        }
-                                    )
-                                    // [추가] 북마크순 드롭다운 옵션
-                                    DropdownMenuItem(
-                                        text = { CText("북마크순", fontSize = 15.dp2sp, color = if(currentSortType == SortType.BOOKMARK) Colors.Default else Colors.Black) },
-                                        onClick = {
-                                            currentSortType = SortType.BOOKMARK
-                                            isSortAscending = true
-                                            updateFileList()
+                                            val newAsc = if (currentSortType == SortType.SIZE) !isSortAscending else true
+                                            changeSortAndSave(SortType.SIZE, newAsc)
                                             showSortMenu = false
                                         }
                                     )
                                     DropdownMenuItem(
                                         text = { CText("랜덤순", fontSize = 15.dp2sp, color = if(currentSortType == SortType.RANDOM) Colors.Default else Colors.Black) },
                                         onClick = {
-                                            currentSortType = SortType.RANDOM
-                                            isSortAscending = true
-                                            updateFileList()
+                                            changeSortAndSave(SortType.RANDOM, true)
                                             showSortMenu = false
                                         }
                                     )
@@ -534,7 +565,7 @@ class FrmLocalJC : FrmBase() {
                         FileRowItem(
                             item = fileData,
                             isSelected = selectedItems.any { it.mPath == fileData.mPath },
-                            searchQuery = searchQuery, // [추가] 검색어 전달
+                            searchQuery = searchQuery,
                             onItemClick = {
                                 if (fileData.mPath == "..") {
                                     moveParent(rootPath)
@@ -558,7 +589,6 @@ class FrmLocalJC : FrmBase() {
                     }
                 }
 
-                // ... (Delete Dialog 등 기존 코드 유지)
                 if (showDeleteDialog) {
                     AlertDialog(
                         onDismissRequest = { showDeleteDialog = false },
@@ -640,7 +670,6 @@ class FrmLocalJC : FrmBase() {
         modifier: Modifier = Modifier,
         color: Color = Colors[0x6E6E6E],
         fontSize: TextUnit = 16.dp2sp,
-        maxLines: Int = 1,
         overflow: TextOverflow = TextOverflow.Ellipsis
     ) {
         val annotatedString = buildAnnotatedString {
@@ -661,20 +690,31 @@ class FrmLocalJC : FrmBase() {
             }
         }
 
-        Text(
-            text = annotatedString,
-            color = color,
-            fontSize = fontSize,
-            maxLines = maxLines,
-            overflow = overflow,
-            softWrap = false,
-            autoSize = TextAutoSize.StepBased(
-                minFontSize = 8.dp2sp,
-                maxFontSize = fontSize,
-                stepSize = 1.dp2sp
-            ),
-            modifier = modifier
-        )
+        val textMeasurer = rememberTextMeasurer()
+
+        BoxWithConstraints(modifier = modifier) {
+            val textLayoutResult = textMeasurer.measure(
+                text = annotatedString,
+                style = TextStyle(fontSize = 13.dp2sp),
+                maxLines = 1
+            )
+
+            val dynamicMaxLines = if (textLayoutResult.size.width > constraints.maxWidth) 2 else 1
+
+            Text(
+                text = annotatedString,
+                color = color,
+                fontSize = fontSize,
+                maxLines = dynamicMaxLines,
+                overflow = overflow,
+                softWrap = dynamicMaxLines > 1,
+                autoSize = TextAutoSize.StepBased(
+                    minFontSize = 8.dp2sp,
+                    maxFontSize = fontSize,
+                    stepSize = 1.dp2sp
+                )
+            )
+        }
     }
 
     @Composable
@@ -705,7 +745,6 @@ class FrmLocalJC : FrmBase() {
                 }
             }
 
-
             Spacer(modifier = Modifier.width(10.dp))
 
             HighlightedText(
@@ -713,7 +752,6 @@ class FrmLocalJC : FrmBase() {
                 query = searchQuery,
                 color = Colors[0x6E6E6E],
                 fontSize = 16.dp2sp,
-                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
@@ -908,12 +946,6 @@ object FileManager {
             intent.putExtra(ActMain.EXTRA_BROWSER_PATH, file.absolutePath)
             context.startActivity(intent)
         } else if (extension.equals("epub", ignoreCase = true)) {
-//            val fileUri = FileProvider.getUriForFile(this, FileUriProvider, file)
-//            CLog.e("KDS3393_TEST_file\n" +
-//                    "path[${Uri.fromFile(file)}]\n" +
-//                    "fileUri[$fileUri]")
-//            startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(fileUri, "application/epub+zip"))
-
             CLog.e("KDS3393_TEST_file\n" + "path[${getPath(context, Uri.fromFile(file))}]")
         }
     }
