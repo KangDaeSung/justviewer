@@ -7,6 +7,7 @@ import com.kds3393.just.justviewer2.music.PlayerManager
 enum class ACTION {
     //Music
     MUSIC_STATE_CHANGE,         //음악 상태 변경 STATE_IDLE(1), STATE_BUFFERING(2), STATE_READY(3), STATE_ENDED(4)
+    FILE_REMOVE,
 }
 
 object Event {
@@ -42,4 +43,6 @@ object Event {
     class FavoriteDir(var path:String)
     @Suppress("unused")
     class Bookmark(val data:BookmarkData, val isAdd:Boolean = false)
+
+    class FileAction(val action : ACTION, val files:List<String>)
 }

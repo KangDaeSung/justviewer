@@ -101,6 +101,7 @@ import com.kds3393.just.justviewer2.db.DBMgr
 import com.kds3393.just.justviewer2.image.ActImageViewer
 import com.kds3393.just.justviewer2.renamer.ActRenamer
 import com.kds3393.just.justviewer2.text.ActTextViewerJC
+import com.kds3393.just.justviewer2.utils.ACTION
 import com.kds3393.just.justviewer2.utils.Event
 import com.kds3393.just.justviewer2.utils.SharePref
 import common.lib.debug.CLog
@@ -189,7 +190,19 @@ class FrmLocalJC : FrmBase() {
         SharedBus.register<Event.Bookmark>(lifecycleScope) {
             updateFileList()
         }
-
+        SharedBus.register<Event.FileAction>(lifecycleScope) { action ->
+            if (action.action == ACTION.FILE_REMOVE) {
+                val targetPaths = action.files
+                val updatedFiles = currentRawFiles?.filter { file ->
+                    file.path !in targetPaths && file.absolutePath !in targetPaths
+                }
+                if (currentRawFiles?.size != updatedFiles?.size) {
+                    currentRawFiles = updatedFiles
+                    selectedItems.removeAll { it.mPath in targetPaths }
+                    updateFileList()
+                }
+            }
+        }
         return ComposeView(requireContext()).apply {
             setContent {
                 LaunchedEffect(Unit) {

@@ -89,10 +89,13 @@ import com.kds3393.just.justviewer2.compose.MapViewModel
 import com.kds3393.just.justviewer2.compose.dp2sp
 import com.kds3393.just.justviewer2.data.BOOKMARK_TYPE_TEXT
 import com.kds3393.just.justviewer2.data.BookmarkData
+import com.kds3393.just.justviewer2.utils.ACTION
+import com.kds3393.just.justviewer2.utils.Event
 import common.lib.base.getFileName
 import common.lib.base.launchIO
 import common.lib.base.launchMain
 import common.lib.debug.CLog
+import common.lib.utils.SharedBus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -617,6 +620,7 @@ class ActTextViewerJC : ActBase() {
         if (file.exists()) {
             if (file.delete()) {
                 Toast.makeText(this@ActTextViewerJC, "파일이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                SharedBus.post(Event.FileAction(ACTION.FILE_REMOVE, listOf(contentPath)))
                 finish()
             } else {
                 Toast.makeText(this@ActTextViewerJC, "파일 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show()
